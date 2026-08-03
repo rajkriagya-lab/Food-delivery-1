@@ -2,12 +2,14 @@ import { Link, useNavigate } from 'react-router-dom'
 import AuthLayout from '../../components/auth/AuthLayout'
 import Input from '../../components/auth/Input'
 import Button from '../../components/auth/Button'
-import React from 'react'
+import React, { useState } from 'react'
+import { useAuthStore } from '../../store/authStore'
 
 export default function Register() {
-    const { register, loading } = userAuthStore();
+    const { register, loading } = useAuthStore();
     const navigate = useNavigate();
-    const [fromData, setFromData] = userState({
+
+    const [formData, setFormData] = useState({
         name: "",
         email: "",
         password: "",
@@ -15,30 +17,58 @@ export default function Register() {
     });
 
     const handleChange = (e) => {
-        setFormData({ ...fromData, [e.target, name]: e.target.value });
+        setFormData({ ...formData, [e.target.name]: e.target.value });
     }
 
     const handleSubmit = (e) => {
-        e.preventDefult();
-        register(fromData, navigate);
+        e.preventDefault();
+        register(formData, navigate);
     };
+
     return (
         <AuthLayout title="Create Account" subtitle="Register to Continue">
-            <form>
-                <Input label="Full Name" type="text" placeholder="Enter your name" />
-                <Input label="Email" type="email" placeholder="Enter your email" />
-                <Input label="Password" type="password" placeholder="Enter your password" />
+            <form onSubmit={handleSubmit}>
+                <Input
+                    label="Full Name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange} 
+                    type="text"
+                    placeholder="Enter your name"
+                />
+                <Input
+                    label="Email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange} 
+                    type="email"
+                    placeholder="Enter your email"
+                />
+                <Input
+                    label="Password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange} 
+                    type="password"
+                    placeholder="Enter your password"
+                />
 
                 <div className="mb-6">
                     <label className="block text-white mb-2">Role</label>
-                    <select className="w-full bg-primary text-white rounded-lg p-3 border border-gray-700">
+                    <select
+                        name="role"
+                        value={formData.role}
+                        onChange={handleChange} 
+                        className="w-full bg-primary text-white rounded-lg p-3 border border-gray-700">
                         <option value="">Select Role</option>
                         <option value="CUSTOMER">Customer</option>
                         <option value="RESTURANT_OWNER">Restaurant Owner</option>
                     </select>
                 </div>
 
-                <Button type="submit">Register</Button>
+                <Button disabled={loading}>
+                    {loading ? "Creating Account..." : "Register"}
+                </Button>
             </form>
 
             <p className="text-center text-gray-400 mt-6">

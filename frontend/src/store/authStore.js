@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { axiosInstance } from "../Api/axios";
+import axiosInstance from "../Api/axios";
 import toast from "react-hot-toast";
 
 const getRedirectPath = (role) => {
@@ -12,25 +12,25 @@ export const useAuthStore = create((set) => ({
     user: null,
     loading: false,
 
-    Register: async (fromData, navigate) => {
+    register: async (formData, navigate) => {
         try {
             set({ loading: true });
-            const { data } = await axiosInstance.post("/auth/register", FromData);
+            const { data } = await axiosInstance.post("/auth/register", formData);
             if (data.success) {
                 toast.success(data.message || "Account Created!!");
                 navigate("/login");
             }
         } catch (error) {
             toast.error(error.response?.data?.message || "Register failed");
-        }
-        finally {
+        } finally {
             set({ loading: false });
         }
     },
-    login: async (fromData, navigate) => {
+
+    login: async (formData, navigate) => {
         try {
             set({ loading: true });
-            const { data } = await axiosInstance.post("/auth/login", FromData);
+            const { data } = await axiosInstance.post("/auth/login", formData);
             if (data.success) {
                 set({ user: data.user });
                 toast.success(data.message || "Login Successfully!");
@@ -54,14 +54,14 @@ export const useAuthStore = create((set) => ({
         }
     },
 
-    checkAuth:async()=>{
+    checkAuth: async () => {
         try {
-            const {data}=await axiosInstance.get("/auth/me");
-            if(data.success){
-                set({users: data.user});
+            const { data } = await axiosInstance.get("/auth/me");
+            if (data.success) {
+                set({ user: data.user });
             }
         } catch (error) {
-            set({user: null});
+            set({ user: null });
         }
     }
 }));
