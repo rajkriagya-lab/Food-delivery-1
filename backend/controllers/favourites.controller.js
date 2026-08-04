@@ -38,7 +38,7 @@ export const toggelFavourites = async (req, res) => {
         const favourite = await prisma.favourite.create({
             data: {
                 userId: req.user.id,
-                foodId,             
+                foodId,            
             },
         });
 
@@ -58,32 +58,34 @@ export const toggelFavourites = async (req, res) => {
     }
 };
 
-export const getMyFavourites = async (req,res)=>{
+export const getMyFavourites = async (req, res) => {
     try {
         const favourites = await prisma.favourite.findMany({
-            where:{
+            where: {
                 userId: req.user.id,
             },
-            orderBy:{
+            orderBy: {
                 createdAt: "desc",
             },
-            include:{
-                food:{
-                    restaurant:{
-                        select:{
-                            id: true,
-                            name: true,
-                            slug: true,
-                            city: true,
-                            rating: true,
-                            isOpen: true,
+            include: {
+                food: {
+                    include: { 
+                        restaurant: {
+                            select: {
+                                id: true,
+                                name: true,
+                                slug: true,
+                                city: true,
+                                rating: true,
+                                isOpen: true,
+                            },
                         },
-                    },
-                    category:{
-                        select:{
-                            id: true,
-                            name: true,
-                            slug: true,
+                        category: {
+                            select: {
+                                id: true,
+                                name: true,
+                                slug: true,
+                            },
                         },
                     },
                 },
@@ -99,34 +101,34 @@ export const getMyFavourites = async (req,res)=>{
         console.error("Get Favourites Error:", error);
 
         res.status(500).json({
-            success: true,
-            message:error.message,
+            success: false, 
+            message: error.message,
         });
     }
 };
 
-export const removeFavourte = async (req,res) =>{
+export const removeFavourite = async (req, res) => { 
     try {
-        const {foodId}= req.params;
+        const { foodId } = req.params;
 
-        const favourites = await prisma.favourite.findUnique({
+        const favourite = await prisma.favourite.findUnique({ 
             where: {
-                userId_foodId:{
+                userId_foodId: {
                     userId: req.user.id,
                     foodId,
                 },
             },
         });
 
-        if(!favourite){
+        if (!favourite) {
             return res.status(404).json({
                 success: false,
-                message: "Favourite items not found.",
+                message: "Favourite item not found.",
             });
         }
 
         await prisma.favourite.delete({
-            where:{id: favourite.id},
+            where: { id: favourite.id },
         });
 
         res.status(200).json({
@@ -137,7 +139,7 @@ export const removeFavourte = async (req,res) =>{
         console.error("Remove Favourite Error:", error);
 
         res.status(500).json({
-            success :false,
+            success: false,
             message: error.message,
         });
     }

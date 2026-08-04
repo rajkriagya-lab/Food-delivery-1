@@ -11,6 +11,7 @@ const getRedirectPath = (role) => {
 export const useAuthStore = create((set) => ({
     user: null,
     loading: false,
+    checkingAuth: true,
 
     register: async (formData, navigate) => {
         try {
@@ -62,6 +63,8 @@ export const useAuthStore = create((set) => ({
             }
         } catch (error) {
             set({ user: null });
+        } finally{
+            set({checkingAuth: false});
         }
-    }
+    },
 }));

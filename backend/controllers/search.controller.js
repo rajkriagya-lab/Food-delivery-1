@@ -18,13 +18,13 @@ export const searchRestaurants = async (req, res) => {
                                     },
                                 },
                                 {
-                                    decriptions: {
-                                        container: keyword,
+                                    description: { 
+                                        contains: keyword, 
                                         mode: "insensitive",
                                     },
                                 },
                             ],
-                        }
+                          }
                         : {},
                     city
                         ? {
@@ -32,7 +32,7 @@ export const searchRestaurants = async (req, res) => {
                                 contains: city,
                                 mode: "insensitive",
                             },
-                        }
+                          }
                         : {},
                 ],
             },
@@ -79,29 +79,29 @@ export const searchFoods = async (req, res) => {
                             OR: [
                                 {
                                     name: {
-                                        container: keyword,
+                                        contains: keyword, 
                                         mode: "insensitive",
                                     },
                                 },
                                 {
                                     description: {
-                                        container: keyword,
+                                        contains: keyword, 
                                         mode: "insensitive",
                                     }
                                 }
                             ],
-                        }
+                          }
                         : {},
 
                     categoryId ? { categoryId } : {},
                     restaurantId ? { restaurantId } : {},
-                    minprice || maxPrice
+                    minPrice || maxPrice
                         ? {
                             price: {
                                 ...(minPrice && { gte: Number(minPrice) }),
-                                ...(maxPrice && { gte: Number(maxPrice) }),
+                                ...(maxPrice && { lte: Number(maxPrice) }), 
                             },
-                        }
+                          }
                         : {},
                 ],
             },
@@ -146,7 +146,7 @@ export const searchFoods = async (req, res) => {
 
 export const getPopularRestaurant = async (req, res) => {
     try {
-        const restaurant = await prisma.restaurant.findMany({
+        const restaurants = await prisma.restaurant.findMany({ // Fixed variable name restaurant -> restaurants
             where: {
                 isOpen: true,
             },
@@ -158,16 +158,15 @@ export const getPopularRestaurant = async (req, res) => {
                     totalReview: "desc"
                 },
             ],
-
             take: 10,
         });
 
         res.status(200).json({
-            succcess: true,
+            success: true, // Fixed succcess -> success
             restaurants,
         });
     } catch (error) {
-        console.error("Popualar Restaurants Error:", error);
+        console.error("Popular Restaurants Error:", error);
 
         res.status(500).json({
             success: false,

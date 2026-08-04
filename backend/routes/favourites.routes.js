@@ -2,7 +2,7 @@ import express from "express";
 
 import {protect} from "../middleware/auth.middleware.js";
 import {authorize} from "../middleware/authorize.middleware.js";
-import { getMyFavourites, removeFavourte, toggelFavourites } from "../controllers/favourites.controller";
+import { getMyFavourites,  removeFavourite,  toggelFavourites } from "../controllers/favourites.controller.js";
 
 
 const router = express.Router();
@@ -11,6 +11,6 @@ router.post("/toggle/:foodId", protect, authorize("CUSTOMER"), toggelFavourites)
 
 router.get("/my", protect, authorize("CUSTOMER"), getMyFavourites);
 
-router.delete("/foodId", protect, authorize("CUSTOME"), removeFavourte);
+router.delete("/foodId", protect, authorize("CUSTOME"), removeFavourite);
 
 export default router;
