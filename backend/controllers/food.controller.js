@@ -213,36 +213,19 @@ export const getFoodsByCategory = async (req, res) => {
 
 export const getFoodsByRestaurant = async (req, res) => {
     try {
-        const { restaurantId } = req.params;
+        const { restaurantId } = req.params; 
 
         const foods = await prisma.food.findMany({
-            where: {
-                restaurantId,
-                isAvailable: true,
-            },
-            orderBy: { createdAt: "desc" },
-            include: {
-                restaurant: {
-                    select: {
-                        id: true,
-                        name: true,
-                        slug: true,
-                    },
-                },
-            },
+            where: { restaurantId },
+            include: { category: true }
         });
 
         return res.status(200).json({
             success: true,
-            totalFood: foods.length,
             foods,
         });
     } catch (error) {
-        console.error("Get Food By Restaurant Error", error);
-        return res.status(500).json({
-            success: false,
-            message: error.message,
-        });
+        return res.status(500).json({ success: false, message: error.message });
     }
 };
 

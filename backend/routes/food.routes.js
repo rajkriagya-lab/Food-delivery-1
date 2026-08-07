@@ -1,7 +1,7 @@
 import express from "express";
-import {protect} from "../middleware/auth.middleware.js"
-import {authorize} from "../middleware/authorize.middleware.js"
-import {upload} from "../middleware/multer.js"
+import { protect } from "../middleware/auth.middleware.js"
+import { authorize } from "../middleware/authorize.middleware.js"
+import { upload } from "../middleware/multer.js"
 import { createFood, deleteFood, getAllFood, getFoodsByCategory, getFoodsByRestaurant, getSingleFood, updateFood } from "../controllers/food.controller.js";
 
 const router = express.Router();
@@ -17,7 +17,7 @@ router.post(
 router.get("/all", getAllFood);
 router.get("/single/:slug", getSingleFood);
 router.get("/category/:categoryId", getFoodsByCategory);
-router.get("/restaurant/:resturantId", getFoodsByRestaurant);
+router.get("/restaurant/:restaurantId", getFoodsByRestaurant);
 
 router.put(
     "/update/:id",
@@ -27,6 +27,6 @@ router.put(
     updateFood,
 );
 
-router.delete("/:id",protect, authorize("RESTURANT_OWNER"),deleteFood);
+router.delete("/:id", protect, authorize("RESTURANT_OWNER"), deleteFood);
 
 export default router;

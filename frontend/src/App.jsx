@@ -9,6 +9,7 @@ import RestaurantDashboard from './pages/restaurants/RestaurantDashboard'
 
 import Layout from './components/layouts/Layout'
 import Restaurants from './pages/customer/Restaurants'
+import RestaurantDetails from './pages/customer/RestaurantDetails'
 import Home from './pages/customer/Home'
 import Cuisines from './pages/customer/Cuisines'
 import Offers from './pages/customer/Offers'
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/restaurants" element={<Restaurants />} />
           <Route path="/restaurant" element={<Restaurants />} />
+          <Route path="/restaurant/:id" element={<RestaurantDetails />} />
           <Route path="/cuisines" element={<Cuisines />} />
           <Route path="/offers" element={<Offers />} />
           <Route path="/track" element={<TrackOrder />} />

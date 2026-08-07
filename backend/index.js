@@ -44,12 +44,12 @@ app.get("/", (req, res)=>{
     res.json({success:true, message:"Backend is Running"});
 });
 
-//API ENDPOINTS
+// API ENDPOINTS
 app.use("/api/auth", authRoutes);
-app.use("/api/restaurant", restaurantRoutes);
+app.use("/api/restaurants", restaurantRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/foods", foodRoutes);
-app.use("/api/carts", cartRoutes);
+app.use("/api/cart", cartRoutes);             
 app.use("/api/addresses", addressRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/reviews", restaurantRoutes);

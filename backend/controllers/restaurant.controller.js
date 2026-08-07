@@ -102,11 +102,14 @@ export const getAllRestaurants = async (req, res) => {
 
 export const getSingleRestaurant = async (req, res) => {
     try {
-        const { slug } = req.params;
+        const { id } = req.params; // or slug, depending on your route parameter name
 
-        const restaurant = await prisma.restaurant.findUnique({
+        const restaurant = await prisma.restaurant.findFirst({
             where: {
-                slug,
+                OR: [
+                    { id: id },
+                    { slug: id }
+                ]
             },
             include: {
                 owner: {
