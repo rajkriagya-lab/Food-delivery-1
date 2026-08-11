@@ -24,6 +24,13 @@ export const createOrder = async (req, res) => {
             });
         }
 
+        if (address.userId !== req.user.id) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not authorized to use this address.",
+            });
+        }
+
         const cart = await prisma.cart.findUnique({
             where: { userId: req.user.id },
             include: {

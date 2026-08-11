@@ -13,19 +13,23 @@ import foodRoutes from "./routes/food.routes.js";
 import cartRoutes from "./routes/cart.routes.js";
 import addressRoutes from "./routes/address.routes.js";
 import orderRoutes from "./routes/order.routes.js";
-import reviewRoutes from "./routes/review.routes.js";
+import reviewRoutes from "./routes/review.routes.js"; // Fixed import usage
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import searchRoutes from "./routes/search.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import favouriteRoutes from "./routes/favourites.routes.js";
+import paymentRoutes from "./routes/payment.routes.js";
 import connectCloudinary from "./config/cloudinary.js";
+
 dotenv.config();
 
 const app = express();
 connectCloudinary();
 const PORT = process.env.PORT || 8000;
 
-//middlewares
+// Security & Performance Middlewares
+app.use(helmet());                  
+app.use(compression());             
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
@@ -36,12 +40,13 @@ app.use(
 );
 app.use(cookieParser());
 
-if(process.env.NOD_ENV !=="production"){
+// Logging Middleware (Fixed typo: NOD_ENV -> NODE_ENV)
+if (process.env.NODE_ENV !== "production") {
     app.use(morgan("dev"));
 }
 
-app.get("/", (req, res)=>{
-    res.json({success:true, message:"Backend is Running"});
+app.get("/", (req, res) => {
+    res.json({ success: true, message: "Backend is Running" });
 });
 
 // API ENDPOINTS
@@ -50,15 +55,15 @@ app.use("/api/restaurants", restaurantRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/foods", foodRoutes);
 app.use("/api/cart", cartRoutes);             
-app.use("/api/addresses", addressRoutes);
+app.use("/api/address", addressRoutes);
 app.use("/api/orders", orderRoutes);
-app.use("/api/reviews", restaurantRoutes);
+app.use("/api/reviews", reviewRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/favourites", favouriteRoutes);
+app.use("/api/payments", paymentRoutes);
 
-app.listen(PORT, ()=>{
-    console.log(`server is running on port${PORT}`);
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
-

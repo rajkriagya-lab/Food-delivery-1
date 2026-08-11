@@ -11,6 +11,6 @@ router.post("/toggle/:foodId", protect, authorize("CUSTOMER"), toggelFavourites)
 
 router.get("/my", protect, authorize("CUSTOMER"), getMyFavourites);
 
-router.delete("/foodId", protect, authorize("CUSTOME"), removeFavourite);
+router.delete("/:foodId", protect, authorize("CUSTOMER"), removeFavourite);
 
 export default router;
