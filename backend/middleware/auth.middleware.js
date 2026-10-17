@@ -3,7 +3,10 @@ import { prisma } from "../db.js";
 
 export const protect = async (req, res, next) => { 
     try {
-        const { token } = req.cookies;
+        const cookieToken = req.cookies?.token;
+        const authorization = req.headers.authorization;
+        const bearerToken = authorization?.startsWith("Bearer ") ? authorization.slice(7) : null;
+        const token = cookieToken || bearerToken;
         if (!token) {
             return res.status(401).json({
                 success: false,

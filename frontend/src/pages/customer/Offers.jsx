@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Tag, Clock, Sparkles, Copy, Check, Bookmark, BookmarkCheck } from 'lucide-react';
 import axiosInstance from '../../Api/axios';
 
@@ -16,8 +16,8 @@ export default function Offers() {
                 setOffers(offersRes.data.offers || []);
 
                 // Fetch user's profile/saved coupons from backend
-                const userRes = await axiosInstance.get('/auth/profile');
-                const userSaved = userRes.data.user?.savedCoupons || [];
+                const userRes = await axiosInstance.get('/offers/saved');
+                const userSaved = userRes.data.savedCoupons || [];
                 
                 // Map saved coupons assuming backend returns populated coupon objects or IDs
                 setSavedCoupons(userSaved);

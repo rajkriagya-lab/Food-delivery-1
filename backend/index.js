@@ -19,6 +19,7 @@ import searchRoutes from "./routes/search.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import favouriteRoutes from "./routes/favourites.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
+import couponRoutes from "./routes/coupon.routes.js";
 import connectCloudinary from "./config/cloudinary.js";
 
 dotenv.config();
@@ -36,6 +37,8 @@ app.use(
     cors({
         origin: process.env.FRONTEND_URL,
         credentials: true,
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
     }),
 );
 app.use(cookieParser());
@@ -63,6 +66,7 @@ app.use("/api/search", searchRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/favourites", favouriteRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/offers", couponRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import AuthLayout from '../../components/auth/AuthLayout'
 import Input from '../../components/auth/Input'
 import Button from '../../components/auth/Button'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useAuthStore } from '../../store/authStore'
 
 export default function Register() {
@@ -13,7 +13,6 @@ export default function Register() {
         name: "",
         email: "",
         password: "",
-        role: "",
     });
 
     const handleChange = (e) => {
@@ -52,19 +51,6 @@ export default function Register() {
                     type="password"
                     placeholder="Enter your password"
                 />
-
-                <div className="mb-6">
-                    <label className="block text-white mb-2">Role</label>
-                    <select
-                        name="role"
-                        value={formData.role}
-                        onChange={handleChange} 
-                        className="w-full bg-primary text-white rounded-lg p-3 border border-gray-700">
-                        <option value="">Select Role</option>
-                        <option value="CUSTOMER">Customer</option>
-                        <option value="RESTURANT_OWNER">Restaurant Owner</option>
-                    </select>
-                </div>
 
                 <Button disabled={loading}>
                     {loading ? "Creating Account..." : "Register"}

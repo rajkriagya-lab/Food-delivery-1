@@ -4,8 +4,8 @@ import { prisma } from "../db.js";
 
 export const registerUser = async (req, res) => {
     try {
-        const { name, email, password, role } = req.body;
-        if (!name || !email || !password || !role) {
+        const { name, email, password } = req.body;
+        if (!name || !email || !password) {
             return res.status(400).json({
                 success: false,
                 message: "All fields are required",
@@ -32,7 +32,7 @@ export const registerUser = async (req, res) => {
                 name,
                 email,
                 password: hashedPassword,
-                role,
+                role: "CUSTOMER",
             },
         });
 
@@ -146,19 +146,18 @@ export const logoutUser = async (req, res) => {
     }
 };
 
-export const getMe=async(req, res)=>{
+export const getMe = async (req, res) => {
     try {
-        console.log("req.user", req.user);
-
-        res.status(200).json({
+        const { id, name, email, role, avatar, createdAt } = req.user;
+        return res.status(200).json({
             success: true,
-            user: req.user,
-        })
+            user: { id, name, email, role, avatar, createdAt },
+        });
     } catch (error) {
-        console.log("error", error);
+        console.error("getMe error:", error);
         return res.status(500).json({
             success: false,
-            message: error.message,
+            message: "Unable to retrieve the current user.",
         });
     }
-}
+};

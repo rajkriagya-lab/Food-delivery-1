@@ -1,99 +1,97 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+import { prisma } from "../db.js";
 
-exports.getAllOffers = async (req, res) => {
+export const getAllOffers = async (_req, res) => {
     try {
-        const currentDate = new Date();
         const offers = await prisma.coupon.findMany({
-            where: {
-                isActive: true,
-                expiryDate: { gte: currentDate }
-            }
+            where: { isActive: true, expiryDate: { gte: new Date() } },
+            orderBy: { expiryDate: "asc" },
         });
-        res.status(200).json({ success: true, offers });
+        return res.status(200).json({ success: true, offers });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error("getAllOffers error:", error);
+        return res.status(500).json({ success: false, message: "Unable to load offers." });
     }
 };
 
-
-exports.toggleSaveCoupon = async (req, res) => {
+export const getSavedCoupons = async (req, res) => {
     try {
-        const userId = req.user.id; 
-        const { couponId } = req.body;
-
-        
-        const existingSave = await prisma.userCoupon.findUnique({
-            where: {
-                userId_couponId: { userId, couponId }
-            }
+        const saved = await prisma.userCoupon.findMany({
+            where: { userId: req.user.id, coupon: { isActive: true, expiryDate: { gte: new Date() } } },
+            include: { coupon: true },
+            orderBy: { savedAt: "desc" },
         });
-
-        if (existingSave) {
-            
-            await prisma.userCoupon.delete({
-                where: { id: existingSave.id }
-            });
-            return res.status(200).json({ success: true, message: 'Coupon removed from wallet', saved: false });
-        } else {
-            
-            await prisma.userCoupon.create({
-                data: { userId, couponId }
-            });
-            return res.status(200).json({ success: true, message: 'Coupon saved successfully', saved: true });
-        }
+        return res.status(200).json({ success: true, savedCoupons: saved.map(({ coupon }) => coupon) });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error("getSavedCoupons error:", error);
+        return res.status(500).json({ success: false, message: "Unable to load saved coupons." });
     }
 };
 
-exports.applyCoupon = async (req, res) => {
+export const toggleSaveCoupon = async (req, res) => {
+    try {
+        const { couponId } = req.body;
+        if (typeof couponId !== "string" || !couponId) {
+            return res.status(400).json({ success: false, message: "A coupon ID is required." });
+        }
+        const coupon = await prisma.coupon.findFirst({
+            where: { id: couponId, isActive: true, expiryDate: { gte: new Date() } },
+            select: { id: true },
+        });
+        if (!coupon) return res.status(404).json({ success: false, message: "Coupon not found or expired." });
+
+        const key = { userId_couponId: { userId: req.user.id, couponId } };
+        const existing = await prisma.userCoupon.findUnique({ where: key });
+        if (existing) {
+            await prisma.userCoupon.delete({ where: { id: existing.id } });
+            return res.status(200).json({ success: true, message: "Coupon removed from wallet.", saved: false });
+        }
+        await prisma.userCoupon.create({ data: { userId: req.user.id, couponId } });
+        return res.status(200).json({ success: true, message: "Coupon saved successfully.", saved: true });
+    } catch (error) {
+        console.error("toggleSaveCoupon error:", error);
+        return res.status(500).json({ success: false, message: "Unable to update saved coupon." });
+    }
+};
+
+export const applyCoupon = async (req, res) => {
     try {
         const { code, cartTotal } = req.body;
-
-        const coupon = await prisma.coupon.findUnique({
-            where: { code: code.toUpperCase() }
-        });
-
-        if (!coupon || !coupon.isActive) {
-            return res.status(404).json({ success: false, message: 'Invalid or expired coupon code' });
+        const subtotal = Number(cartTotal);
+        if (typeof code !== "string" || !code.trim() || !Number.isFinite(subtotal) || subtotal < 0) {
+            return res.status(400).json({ success: false, message: "A coupon code and valid cart total are required." });
         }
 
-        // Check expiry date
-        if (new Date() > new Date(coupon.expiryDate)) {
-            return res.status(400).json({ success: false, message: 'This coupon has expired' });
+        const coupon = await prisma.coupon.findUnique({ where: { code: code.trim().toUpperCase() } });
+        if (!coupon || !coupon.isActive || coupon.expiryDate < new Date()) {
+            return res.status(404).json({ success: false, message: "Invalid or expired coupon code." });
         }
-
-        if (cartTotal < coupon.minOrderValue) {
-            return res.status(400).json({ 
-                success: false, 
-                message: `Minimum order of Rs. ${coupon.minOrderValue} required for this coupon` 
-            });
+        if (subtotal < coupon.minOrderValue) {
+            return res.status(400).json({ success: false, message: `Minimum order of Rs. ${coupon.minOrderValue} required for this coupon.` });
         }
 
         let discountAmount = 0;
-        if (coupon.discountType === 'percentage') {
-            discountAmount = (cartTotal * coupon.discountValue) / 100;
-            if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
-                discountAmount = coupon.maxDiscount;
-            }
-        } else if (coupon.discountType === 'fixed') {
-            discountAmount = coupon.discountValue;
-        } else if (coupon.discountType === 'free_delivery') {
-            discountAmount = 100; 
+        let freeDelivery = false;
+        if (coupon.discountType === "percentage") {
+            discountAmount = subtotal * coupon.discountValue / 100;
+            if (coupon.maxDiscount != null) discountAmount = Math.min(discountAmount, coupon.maxDiscount);
+        } else if (coupon.discountType === "fixed") {
+            discountAmount = Math.min(subtotal, coupon.discountValue);
+        } else if (coupon.discountType === "free_delivery") {
+            freeDelivery = true;
+        } else {
+            return res.status(400).json({ success: false, message: "This coupon has an unsupported discount type." });
         }
 
-        const finalTotal = Math.max(0, cartTotal - discountAmount);
-
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
-            message: 'Coupon applied successfully!',
+            message: "Coupon applied successfully.",
             discountAmount,
-            finalTotal,
-            couponCode: coupon.code
+            freeDelivery,
+            finalTotal: Math.max(0, subtotal - discountAmount),
+            couponCode: coupon.code,
         });
-
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error("applyCoupon error:", error);
+        return res.status(500).json({ success: false, message: "Unable to apply coupon." });
     }
 };
