@@ -1,0 +1,32 @@
+import { useEffect } from "react";
+import { Link } from "react-router-dom";
+import { ArrowRight, Heart, Leaf, MapPin, ShieldCheck, Sparkles, UtensilsCrossed } from "lucide-react";
+import heroImage from "../../assets/hero.png";
+
+const values = [
+    { icon: Heart, title: "People first", text: "Good food brings people together. Every decision should make that experience easier." },
+    { icon: Leaf, title: "Local by nature", text: "We make room for the neighborhood restaurants and kitchens that give every city its character." },
+    { icon: ShieldCheck, title: "Clear and dependable", text: "From menu details to order updates, we aim to make every step feel straightforward." },
+];
+
+export default function About() {
+    useEffect(() => { document.title = "About KHAANA | Food, close to home"; }, []);
+    return <main className="bg-primary text-white">
+        <section className="relative isolate overflow-hidden">
+            <img src={heroImage} alt="A freshly prepared meal ready to share" className="absolute inset-0 -z-20 h-full w-full object-cover opacity-25" />
+            <div className="absolute inset-0 -z-10 bg-gradient-to-r from-primary via-primary/95 to-primary/45" />
+            <div className="mx-auto grid max-w-7xl gap-10 px-5 py-20 sm:px-8 md:min-h-[520px] md:grid-cols-2 md:items-center md:py-24">
+                <div><p className="mb-5 inline-flex items-center gap-2 rounded-full border border-orange-400/30 bg-orange-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-orange-300"><Sparkles size={15} /> A little closer to good food</p>
+                    <h1 className="max-w-2xl text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">Good food makes a place feel like <span className="text-orange-400">home.</span></h1>
+                    <p className="mt-6 max-w-xl text-base leading-7 text-slate-300 sm:text-lg">KHAANA brings neighborhood restaurants and hungry people together, making it easier to find the meal you’re in the mood for.</p>
+                    <div className="mt-8 flex flex-wrap gap-3"><Link to="/restaurants" className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-3 text-sm font-bold hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-300">Explore restaurants <ArrowRight size={17} /></Link><Link to="/careers" className="rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold hover:bg-white/10">Join our team</Link></div>
+                </div>
+                <div className="hidden justify-center md:flex"><div className="relative max-w-md rotate-2 rounded-[2rem] border border-white/10 bg-white/5 p-3 shadow-2xl backdrop-blur-sm"><img src={heroImage} alt="" className="h-72 w-full rounded-[1.5rem] object-cover" /><div className="absolute -bottom-5 -left-5 flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-950/90 px-4 py-3 shadow-xl"><span className="grid h-10 w-10 place-items-center rounded-xl bg-orange-500/15 text-orange-400"><UtensilsCrossed size={20} /></span><span><strong className="block text-sm">Made for your table</strong><span className="text-xs text-slate-400">Discover something delicious</span></span></div></div></div>
+            </div>
+        </section>
+        <section className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 md:grid-cols-[0.8fr_1.2fr] md:py-24"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-400">Our story</p><h2 className="mt-4 text-3xl font-black sm:text-4xl">A simple idea, served fresh.</h2></div><div className="space-y-5 text-base leading-8 text-slate-300"><p>Finding a meal you love should feel like the start of a good moment. KHAANA is built to make discovering local food and ordering from nearby restaurants feel simple and welcoming.</p><p>We’re creating a place where customers can explore, restaurants can share what they do best, and a craving can turn into a meal worth remembering.</p></div></section>
+        <section className="border-y border-white/5 bg-slate-950/35"><div className="mx-auto grid max-w-7xl gap-8 px-5 py-16 sm:px-8 md:grid-cols-2 md:py-20"><article className="rounded-3xl border border-white/10 bg-white/[0.03] p-7 sm:p-9"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-orange-500/15 text-orange-400"><Heart /></span><h2 className="mt-6 text-2xl font-bold">Our mission</h2><p className="mt-3 leading-7 text-slate-300">Help people discover and enjoy the food made by the kitchens around them.</p></article><article className="rounded-3xl border border-white/10 bg-white/[0.03] p-7 sm:p-9"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-orange-500/15 text-orange-400"><MapPin /></span><h2 className="mt-6 text-2xl font-bold">Our vision</h2><p className="mt-3 leading-7 text-slate-300">Make local food discovery feel effortless, personal, and part of everyday life.</p></article></div></section>
+        <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 md:py-24"><div className="mx-auto max-w-2xl text-center"><p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-400">What guides us</p><h2 className="mt-4 text-3xl font-black sm:text-4xl">The values behind every order</h2></div><div className="mt-10 grid gap-4 md:grid-cols-3">{values.map(({ icon: Icon, title, text }) => <article key={title} className="rounded-3xl border border-white/10 bg-card p-7 transition hover:-translate-y-1 hover:border-orange-500/30"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-orange-500/15 text-orange-400"><Icon /></span><h3 className="mt-5 text-lg font-bold">{title}</h3><p className="mt-3 text-sm leading-6 text-slate-400">{text}</p></article>)}</div></section>
+        <section className="mx-auto max-w-7xl px-5 pb-20 sm:px-8"><div className="flex flex-col items-start justify-between gap-6 rounded-3xl bg-orange-500 p-7 sm:p-10 md:flex-row md:items-center"><div><h2 className="text-2xl font-black sm:text-3xl">Your next favorite meal is waiting.</h2><p className="mt-2 text-sm text-orange-50">Browse local restaurants and find something that feels right.</p></div><Link to="/restaurants" className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold hover:bg-slate-900">Find a restaurant <ArrowRight size={16} /></Link></div></section>
+    </main>;
+}

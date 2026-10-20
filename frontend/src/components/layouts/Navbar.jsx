@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ShoppingCart, User, Menu, X, LogOut, ChevronRight, UtensilsCrossed } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
@@ -21,13 +21,11 @@ export default function Navbar() {
                     const items = res.data.cart?.items || res.data.items || [];
                     const totalQty = items.reduce((acc, item) => acc + item.quantity, 0);
                     if (isMounted) setCartCount(totalQty);
-                } catch (err) {
+                } catch {
                     if (isMounted) setCartCount(0);
                 }
             };
             fetchCartCount();
-        } else {
-            setCartCount(0);
         }
         return () => {
             isMounted = false;
@@ -41,6 +39,7 @@ export default function Navbar() {
         { name: 'Restaurant', path: '/restaurant' },
         { name: 'Cuisines', path: '/cuisines' },
         { name: 'Offers', path: '/offers' },
+        { name: 'FAQs', path: '/faq' },
         { name: 'Track Order', path: '/track' },
     ];
 
@@ -113,9 +112,9 @@ export default function Navbar() {
 
                             {/* Profile Link */}
                             <Link
-                                to="/orders"
+                                to="/profile"
                                 className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 transition-all group hidden sm:flex items-center"
-                                aria-label="My orders"
+                                aria-label="My profile"
                             >
                                 <User size={18} className="group-hover:scale-105 transition-transform" />
                             </Link>
@@ -173,7 +172,7 @@ export default function Navbar() {
                             className="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:bg-slate-900 hover:text-white transition-all"
                         >
                             <span className="flex items-center gap-2">
-                                <User size={16} /> My Orders
+                                <User size={16} /> My Profile
                             </span>
                             <ChevronRight size={14} className="opacity-50" />
                         </Link>

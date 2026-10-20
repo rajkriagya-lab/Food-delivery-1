@@ -20,6 +20,9 @@ import adminRoutes from "./routes/admin.routes.js";
 import favouriteRoutes from "./routes/favourites.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import couponRoutes from "./routes/coupon.routes.js";
+import careersRoutes from "./routes/careers.routes.js";
+import userRoutes from "./routes/user.routes.js";
+import partnerRoutes from "./routes/partner.routes.js";
 import connectCloudinary from "./config/cloudinary.js";
 
 dotenv.config();
@@ -67,6 +70,9 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/favourites", favouriteRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/offers", couponRoutes);
+app.use("/api/careers", careersRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/partners", partnerRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

@@ -215,7 +215,7 @@ export default function FoodDetail() {
                             <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
                                 <div className="text-left sm:text-right">
                                     <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold block">Total Price</span>
-                                    <span className="font-black text-btn text-2xl">Rs. {finalPrice}</span>
+                                    <span className="price-highlight text-2xl">Rs. {finalPrice}</span>
                                 </div>
 
                                 <button

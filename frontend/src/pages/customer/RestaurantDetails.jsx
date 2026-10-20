@@ -294,7 +294,7 @@ export default function RestaurantDetails() {
                                     <div className="p-5 pt-0 flex items-center justify-between mt-4">
                                         <div className="flex flex-col">
                                             <span className="text-xs text-gray-400 font-medium">Price</span>
-                                            <span className="text-lg font-bold text-gray-900">
+                                            <span className="price-highlight text-lg">
                                                 ${Number(food.price).toFixed(2)}
                                             </span>
                                         </div>

@@ -1,12 +1,96 @@
-@import url(https://fonts.googleapis.com/css?family=Poppins:100,100italic,200,200italic,300,300italic,regular,italic,500,500italic,600,600italic,700,700italic,800,800italic,900,900italic);
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 @theme {
-  --color-primary: #091a23;
-  --color-card: #0d212c;
-  --color-btn: #2d4754;
+  --color-primary: #0a1119;
+  --color-card: #121e29;
+  --color-btn: #f9734f;
 }
 
-body{
-    font-family: "Poppins", sans-serif;
+:root {
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #0a1119;
+  color: #f8fafc;
+  font-weight: 400;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  scroll-behavior: smooth;
+  scrollbar-color: #334454 #0a1119;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(ellipse at 50% -18%, rgba(249, 115, 79, 0.12), transparent 36rem),
+    #0a1119;
+  color: #f8fafc;
+  line-height: 1.55;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:not(:disabled),
+a {
+  touch-action: manipulation;
+}
+
+:focus-visible {
+  outline: 2px solid #fb987d;
+  outline-offset: 3px;
+}
+
+::selection {
+  background: rgba(249, 115, 79, 0.35);
+  color: #fff;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+.price-highlight {
+  display: inline-block;
+  color: #86efac;
+  font-weight: 800;
+  transition: color 180ms ease, transform 180ms ease, text-shadow 180ms ease;
+}
+
+.price-highlight:hover {
+  color: #fff;
+  transform: translateY(-3px);
+  text-shadow: 0 8px 22px rgba(74, 222, 128, 0.28);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

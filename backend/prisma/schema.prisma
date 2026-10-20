@@ -25,6 +25,7 @@ model User {
   id          String       @id @default(cuid())
   name        String
   email       String       @unique
+  phone       String?      @unique
   password    String
   role        Role         @default(CUSTOMER)
   avatar      String?
@@ -37,6 +38,7 @@ model User {
   reviews     Review[]
   favourites  Favourite[]
   userCoupons UserCoupon[]
+  partnerApplications PartnerApplication[]
 
   @@map("users")
 }
@@ -264,4 +266,56 @@ model UserCoupon {
   savedAt  DateTime @default(now())
 
   @@unique([userId, couponId])
+}
+
+model Job {
+  id String @id @default(cuid())
+  title String
+  department String
+  type String
+  location String
+  summary String
+  responsibilities String
+  qualifications String
+  deadline DateTime?
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  applications JobApplication[]
+  @@index([isActive, createdAt])
+  @@map("jobs")
+}
+
+model JobApplication {
+  id String @id @default(cuid())
+  jobId String
+  fullName String
+  email String
+  phone String
+  cvPath String @unique
+  status String @default("NEW")
+  createdAt DateTime @default(now())
+  job Job @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  @@index([jobId, createdAt])
+  @@map("job_applications")
+}
+
+model PartnerApplication {
+  id             String   @id @default(cuid())
+  ownerName      String
+  email          String
+  phone          String
+  restaurantName String
+  location       String
+  cuisine        String
+  passwordHash   String?
+  status         String   @default("PENDING")
+  userId         String?  @unique
+  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([email])
+  @@map("partner_applications")
 }
