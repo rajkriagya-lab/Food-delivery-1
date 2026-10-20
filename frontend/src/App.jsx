@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react'
-import { Route, Routes, Navigate } from 'react-router-dom'
-import { Utensils, Flame, Sparkles } from 'lucide-react';
+import { useEffect } from 'react'
+import { Route, Routes, Navigate, useLocation } from 'react-router-dom'
+import { Utensils, Flame, Sparkles } from 'lucide-react'
 import { Toaster } from 'react-hot-toast'
+
 import Register from './pages/auth/Register'
 import Login from './pages/auth/Login'
 import { useAuthStore } from './store/authStore'
@@ -19,18 +20,53 @@ import Checkout from './pages/customer/Checkout'
 import AddAddress from './pages/customer/AddAddress'
 import Orders from './pages/customer/Orders'
 import PaymentResult from './pages/customer/PaymentResult'
+import Profile from './pages/customer/Profile'
+import About from './pages/info/About'
+import Careers from './pages/info/Careers'
+import FAQ from './pages/info/FAQ'
+import Partner from './pages/info/Partner'
+import PartnerSignup from './pages/info/PartnerSignup'
 
-export default function App() {
-  const { checkAuth, checkingAuth, user } = useAuthStore();
-  const dashboardPath = user?.role === "ADMIN"
-    ? "/admin/dashboard"
-    : user?.role === "RESTURANT_OWNER"
-      ? "/restaurant/dashboard"
-      : "/";
+function ScrollToTop() {
+  const { pathname, search, hash } = useLocation()
 
   useEffect(() => {
-    checkAuth();
-  }, []);
+    if (!hash) window.scrollTo(0, 0)
+  }, [pathname, search, hash])
+
+  return null
+}
+
+// Helper function to resolve user dashboard based on role
+const getDashboardPath = (role) => {
+  if (role === 'ADMIN') return '/admin/dashboard'
+  if (role === 'RESTURANT_OWNER') return '/restaurant/dashboard'
+  return '/'
+}
+
+// Protected Route Component
+const ProtectedRoute = ({ user, allowedRoles, children }) => {
+  if (!user) return <Navigate to="/login" replace />
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to={getDashboardPath(user.role)} replace />
+  }
+  return children
+}
+
+// Public-Only Route Component (Prevents logged in users from visiting Login/Register)
+const PublicOnlyRoute = ({ user, children }) => {
+  if (user) {
+    return <Navigate to={getDashboardPath(user.role)} replace />
+  }
+  return children
+}
+
+export default function App() {
+  const { checkAuth, checkingAuth, user } = useAuthStore()
+
+  useEffect(() => {
+    checkAuth()
+  }, [checkAuth])
 
   if (checkingAuth) {
     return (
@@ -46,7 +82,7 @@ export default function App() {
             <Flame size={18} className="text-amber-400 absolute -top-1 -right-1 animate-pulse z-20" />
           </div>
 
-          {/* App Brand Name with Modern Effect */}
+          {/* App Brand Name */}
           <div className="flex items-center gap-2 mb-2">
             <span className="text-3xl font-black tracking-tight text-white">Khanna</span>
             <Sparkles size={20} className="text-btn animate-spin" />
@@ -56,7 +92,7 @@ export default function App() {
             Preparing something delicious for you...
           </p>
 
-          {/* Modern Loading Progress Dots */}
+          {/* Loading Progress Dots */}
           <div className="flex items-center gap-1.5 mt-6">
             <div className="w-2 h-2 rounded-full bg-btn animate-bounce [animation-delay:-0.3s]"></div>
             <div className="w-2 h-2 rounded-full bg-btn animate-bounce [animation-delay:-0.15s]"></div>
@@ -64,124 +100,128 @@ export default function App() {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   return (
-    <div className='min-h-screen bg-primary text-white'>
-      <Toaster position='top-right' />
+    <div className="min-h-screen bg-primary text-white">
+      <Toaster position="top-right" />
+      <ScrollToTop />
       <Routes>
-        {/* Layout Route wrapping customer pages so Navbar & Footer render correctly */}
+        {/* Customer Pages wrapped in Layout (Navbar & Footer) */}
         <Route element={<Layout />}>
-          <Route path="/" element={user?.role === "ADMIN" || user?.role === "RESTURANT_OWNER" ? <Navigate to={dashboardPath} replace /> : <Home />} />
+          <Route
+            path="/"
+            element={
+              user && user.role !== 'CUSTOMER' ? (
+                <Navigate to={getDashboardPath(user.role)} replace />
+              ) : (
+                <Home />
+              )
+            }
+          />
           <Route path="/restaurants" element={<Restaurants />} />
           <Route path="/restaurant" element={<Restaurants />} />
           <Route path="/restaurant/:id" element={<RestaurantDetails />} />
           <Route path="/cuisines" element={<Cuisines />} />
           <Route path="/offers" element={<Offers />} />
-          <Route path="/track" element={user?.role === "CUSTOMER" ? <Orders /> : <Navigate to="/login" replace />} />
-          <Route path="/orders" element={user?.role === "CUSTOMER" ? <Orders /> : <Navigate to="/login" replace />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/careers" element={<Careers />} />
+          <Route path="/faq" element={<FAQ />} />
+          <Route path="/partner" element={<Partner />} />
+          <Route path="/partner/signup" element={<PartnerSignup />} />
           <Route path="/payment/result" element={<PaymentResult />} />
+
+          {/* Protected Customer Routes */}
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute user={user}>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/track"
+            element={
+              <ProtectedRoute user={user} allowedRoles={['CUSTOMER']}>
+                <Orders />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/orders"
+            element={
+              <ProtectedRoute user={user} allowedRoles={['CUSTOMER']}>
+                <Orders />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/cart"
             element={
-              user ? (
-                user.role === "CUSTOMER" ? (
-                  <Cart />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              ) : (
-                <Navigate to="/login" replace />
-              )
+              <ProtectedRoute user={user} allowedRoles={['CUSTOMER']}>
+                <Cart />
+              </ProtectedRoute>
             }
           />
           <Route
             path="/checkout"
             element={
-              user ? (
-                user.role === "CUSTOMER" ? (
-                  <Checkout />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              ) : (
-                <Navigate to="/login" />
-              )
+              <ProtectedRoute user={user} allowedRoles={['CUSTOMER']}>
+                <Checkout />
+              </ProtectedRoute>
             }
           />
           <Route
             path="/address/add"
             element={
-              user?.role === "CUSTOMER" ? <AddAddress /> : <Navigate to="/login" replace />
+              <ProtectedRoute user={user} allowedRoles={['CUSTOMER']}>
+                <AddAddress />
+              </ProtectedRoute>
             }
           />
         </Route>
 
-        {/* Auth Routes */}
+        {/* Authentication Routes */}
         <Route
-          path='/register'
+          path="/register"
           element={
-            user ? (
-              <Navigate to={
-                user.role === "ADMIN"
-                  ? "/admin/dashboard"
-                  : user.role === "RESTURANT_OWNER"
-                    ? "/restaurant/dashboard"
-                    : "/"
-              } replace />
-            ) : (
+            <PublicOnlyRoute user={user}>
               <Register />
-            )
+            </PublicOnlyRoute>
           }
         />
         <Route
-          path='/login'
+          path="/login"
           element={
-            user ? (
-              <Navigate to={
-                user.role === "ADMIN"
-                  ? "/admin/dashboard"
-                  : user.role === "RESTURANT_OWNER"
-                    ? "/restaurant/dashboard"
-                    : "/"
-              } replace />
-            ) : (
+            <PublicOnlyRoute user={user}>
               <Login />
-            )
+            </PublicOnlyRoute>
           }
         />
 
-        {/* Dashboard Routes (No Navbar/Footer) */}
+        {/* Protected Dashboard Routes (No Layout) */}
         <Route
           path="/restaurant/dashboard"
           element={
-            user ? (
-              user.role === "RESTURANT_OWNER" ? (
-                <RestaurantDashboard />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            ) : (
-              <Navigate to="/login" replace />
-            )
+            <ProtectedRoute user={user} allowedRoles={['RESTURANT_OWNER']}>
+              <RestaurantDashboard />
+            </ProtectedRoute>
           }
         />
         <Route
           path="/admin/dashboard"
           element={
-            user ? (
-              user.role === "ADMIN" ? (
-                <AdminDashboard />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            ) : (
-              <Navigate to="/login" replace />
-            )
+            <ProtectedRoute user={user} allowedRoles={['ADMIN']}>
+              <AdminDashboard />
+            </ProtectedRoute>
           }
         />
         <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+
+        {/* Catch-all Wildcard Route */}
+        <Route path="*" element={<Navigate to={getDashboardPath(user?.role)} replace />} />
       </Routes>
     </div>
   )

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Building2, ChevronRight, CircleDollarSign, Clock3, LayoutDashboard,
   Loader2, LogOut, Menu, Package, RefreshCw, Search, ShieldCheck,
-  Store, Truck, Users, X,
+  Handshake, Store, Truck, Users, X,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -21,6 +21,7 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [restaurants, setRestaurants] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
@@ -29,16 +30,18 @@ export default function AdminDashboard() {
   const loadDashboard = async (isRefresh = false) => {
     isRefresh ? setRefreshing(true) : setLoading(true);
     try {
-      const [overviewRes, usersRes, restaurantsRes, ordersRes] = await Promise.all([
+      const [overviewRes, usersRes, restaurantsRes, ordersRes, applicationsRes] = await Promise.all([
         axiosInstance.get("/admin/overview"),
         axiosInstance.get("/admin/users"),
         axiosInstance.get("/admin/restaurants"),
         axiosInstance.get("/admin/orders"),
+        axiosInstance.get("/admin/partner-applications"),
       ]);
       setOverview(overviewRes.data.overview);
       setUsers(usersRes.data.users || []);
       setRestaurants(restaurantsRes.data.restaurants || []);
       setOrders(ordersRes.data.orders || []);
+      setApplications(applicationsRes.data.applications || []);
     } catch (error) {
       toast.error(error.response?.data?.message || "Unable to load admin dashboard");
     } finally {
@@ -47,7 +50,10 @@ export default function AdminDashboard() {
     }
   };
 
-  useEffect(() => { loadDashboard(); }, []);
+  useEffect(() => {
+    const request = window.setTimeout(() => { void loadDashboard(); }, 0);
+    return () => window.clearTimeout(request);
+  }, []);
 
   const toggleRestaurant = async (restaurant) => {
     try {
@@ -71,6 +77,16 @@ export default function AdminDashboard() {
     }
   };
 
+  const updateApplicationStatus = async (application, status) => {
+    try {
+      const { data } = await axiosInstance.patch(`/admin/partner-applications/${application.id}/status`, { status });
+      setApplications((current) => current.map((item) => item.id === application.id ? data.application : item));
+      toast.success("Partner application status updated");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to update application status");
+    }
+  };
+
   const query = search.trim().toLowerCase();
   
   const filteredUsers = useMemo(() => 
@@ -88,11 +104,17 @@ export default function AdminDashboard() {
     [orders, query]
   );
 
+  const filteredApplications = useMemo(() =>
+    applications.filter((item) => `${item.ownerName} ${item.email} ${item.restaurantName} ${item.location} ${item.status}`.toLowerCase().includes(query)),
+    [applications, query]
+  );
+
   const navItems = [
     ["overview", "Overview", LayoutDashboard], 
     ["users", "Users", Users], 
     ["restaurants", "Restaurants", Store], 
-    ["orders", "Orders", Package]
+    ["orders", "Orders", Package],
+    ["applications", "Partner applications", Handshake]
   ];
 
   if (loading) return <div className="min-h-screen bg-slate-950 text-orange-400 flex items-center justify-center"><Loader2 className="animate-spin" size={40} /></div>;
@@ -130,7 +152,7 @@ export default function AdminDashboard() {
             <div>
               <p className="text-sm font-medium text-orange-400">Platform management</p>
               <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
-                {activeTab === "overview" ? "Admin dashboard" : activeTab[0].toUpperCase() + activeTab.slice(1)}
+                {activeTab === "overview" ? "Admin dashboard" : activeTab === "applications" ? "Partner applications" : activeTab[0].toUpperCase() + activeTab.slice(1)}
               </h1>
             </div>
           </div>
@@ -145,9 +167,9 @@ export default function AdminDashboard() {
             <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="font-bold text-white">
-                  {activeTab === "users" ? "All accounts" : activeTab === "restaurants" ? "Restaurant partners" : "Platform orders"}
+                  {activeTab === "users" ? "All accounts" : activeTab === "restaurants" ? "Restaurant partners" : activeTab === "applications" ? "Restaurant signup requests" : "Platform orders"}
                 </h2>
-                <p className="mt-1 text-xs text-slate-400">Manage and monitor your marketplace activity.</p>
+              <p className="mt-1 text-xs text-slate-400">Manage and monitor your marketplace activity.</p>
               </div>
               <label className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-slate-400">
                 <Search size={16} />
@@ -158,8 +180,10 @@ export default function AdminDashboard() {
               <UsersTable users={filteredUsers} currentUser={user} onDelete={deleteUser} />
             ) : activeTab === "restaurants" ? (
               <RestaurantsTable restaurants={filteredRestaurants} onToggle={toggleRestaurant} />
-            ) : (
+            ) : activeTab === "orders" ? (
               <OrdersTable orders={filteredOrders} />
+            ) : (
+              <ApplicationsTable applications={filteredApplications} onStatusChange={updateApplicationStatus} />
             )}
           </section>
         )}
@@ -313,6 +337,31 @@ function OrdersTable({ orders }) {
       {orders.length === 0 && <Empty text="No orders match your search." />}
     </div>
   ); 
+}
+
+function ApplicationsTable({ applications, onStatusChange }) {
+  return (
+    <div className="space-y-3">
+      {applications.map((item) => (
+        <article key={item.id} className="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-white">{item.restaurantName}</h3><Status status={item.status} /></div>
+              <p className="mt-1 text-sm text-slate-300">{item.ownerName} · {item.cuisine} · {item.location}</p>
+              <p className="mt-1 text-xs text-slate-400">{item.email} · {item.phone}</p>
+              <p className="mt-2 text-xs text-slate-500">Submitted {formatDate(item.createdAt)} · Ref {item.id}</p>
+            </div>
+            <label className="shrink-0 text-xs font-semibold text-slate-400">Application status
+              <select aria-label={`Status for ${item.restaurantName}`} value={item.status} onChange={(event) => onStatusChange(item, event.target.value)} className="mt-1 block w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white">
+                {["PENDING", "REVIEWING", "APPROVED", "DECLINED"].map((status) => <option key={status} value={status}>{status.replaceAll("_", " ")}</option>)}
+              </select>
+            </label>
+          </div>
+        </article>
+      ))}
+      {applications.length === 0 && <Empty text="No partner applications match your search." />}
+    </div>
+  );
 }
 
 function Metric({ label, value, icon: Icon, color }) { 

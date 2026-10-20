@@ -52,6 +52,9 @@ export const registerUser = async (req, res) => {
                 id: user.id,
                 name: user.name,
                 email: user.email,
+                phone: user.phone,
+                avatar: user.avatar,
+                createdAt: user.createdAt,
                 role: user.role,
             },
         });
@@ -113,6 +116,9 @@ export const loginUser = async (req, res) => {
                 id: user.id,
                 name: user.name,
                 email: user.email,
+                phone: user.phone,
+                avatar: user.avatar,
+                createdAt: user.createdAt,
                 role: user.role,
             },
         });
@@ -148,10 +154,10 @@ export const logoutUser = async (req, res) => {
 
 export const getMe = async (req, res) => {
     try {
-        const { id, name, email, role, avatar, createdAt } = req.user;
+        const { id, name, email, phone, role, avatar, createdAt } = req.user;
         return res.status(200).json({
             success: true,
-            user: { id, name, email, role, avatar, createdAt },
+            user: { id, name, email, phone, role, avatar, createdAt },
         });
     } catch (error) {
         console.error("getMe error:", error);

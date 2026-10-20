@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, Star, Truck, ShieldCheck, Clock, ArrowRight, Utensils, ChevronLeft, ChevronRight, Flame, Sparkles, Heart, ShoppingBag, Check } from 'lucide-react';
 import axiosInstance from '../../Api/axios';
@@ -52,7 +52,8 @@ export default function Home() {
     };
 
     useEffect(() => {
-        fetchHomeData();
+        const request = window.setTimeout(fetchHomeData, 0);
+        return () => window.clearTimeout(request);
     }, []);
 
     const handleSearch = (e) => {
@@ -127,58 +128,83 @@ export default function Home() {
                     )}
 
                     {/* Hero Section */}
-                    <section className="relative overflow-hidden bg-card border-b border-gray-800/80 py-24 md:py-36 px-5">
-                        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-btn/15 blur-[160px] rounded-full pointer-events-none"></div>
-                        <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-600/10 blur-[140px] rounded-full pointer-events-none"></div>
-
-                        <div className="max-w-4xl mx-auto text-center flex flex-col items-center gap-6 relative z-10">
-                            <span className="inline-flex items-center gap-2 bg-btn/10 text-btn text-xs md:text-sm font-semibold px-4 py-2 rounded-full border border-btn/20 backdrop-blur-xl shadow-lg shadow-btn/5 animate-fade-in">
-                                <Sparkles size={15} className="animate-spin" />
-                                Lightning-Fast Food Delivery Service
-                            </span>
-
-                            <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight leading-[1.1]">
-                                Satisfy your cravings, delivered <span className="text-btn drop-shadow-[0_0_35px_rgba(var(--btn),0.4)]">swiftly</span> to your door.
-                            </h1>
-                            <p className="text-gray-400 text-base md:text-xl max-w-2xl font-normal leading-relaxed">
-                                Explore handpicked menus from top local restaurants, authentic traditional flavors, and midnight snacks.
-                            </p>
-
-                            <form
-                                onSubmit={handleSearch}
-                                className="w-full max-w-2xl flex items-center bg-primary/90 backdrop-blur-2xl border border-gray-700/80 rounded-2xl p-2.5 shadow-2xl focus-within:border-btn focus-within:ring-4 focus-within:ring-btn/20 transition-all duration-300 mt-2"
-                            >
-                                <Search className="text-gray-400 ml-4 shrink-0" size={22} />
-                                <input
-                                    type="text"
-                                    placeholder="Search for restaurants, cuisines, or favorite dishes..."
-                                    value={keyword}
-                                    onChange={(e) => setKeyword(e.target.value)}
-                                    className="w-full bg-transparent px-4 py-3 text-white placeholder-gray-500 focus:outline-none text-sm md:text-base font-medium"
-                                />
-                                <button
-                                    type="submit"
-                                    className="bg-btn text-white px-7 py-3.5 rounded-xl font-bold text-sm hover:opacity-95 active:scale-95 transition-all cursor-pointer shrink-0 shadow-lg shadow-btn/30 flex items-center gap-2"
-                                >
-                                    <span>Search</span>
-                                    <ArrowRight size={16} />
-                                </button>
-                            </form>
-
-                            <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-xs text-gray-400">
-                                <span className="text-gray-500 font-medium">Trending searches:</span>
-                                {['Momos', 'Pizza', 'Burger', 'Biryani', 'Coffee'].map((tag, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={() => {
-                                            setKeyword(tag);
-                                            navigate(`/restaurant?keyword=${encodeURIComponent(tag)}`);
-                                        }}
-                                        className="bg-card/80 hover:bg-btn/20 hover:text-btn border border-gray-800 hover:border-btn/40 px-3 py-1 rounded-lg transition-colors cursor-pointer"
-                                    >
-                                        {tag}
+                    <section className="relative isolate overflow-hidden border-b border-white/5 bg-[radial-gradient(ellipse_at_top_left,_rgba(249,115,79,0.16),_transparent_48%),linear-gradient(135deg,#111e29_0%,#0a1119_65%)] px-5 py-14 sm:py-20 lg:py-24">
+                        <div aria-hidden="true" className="pointer-events-none absolute -left-28 top-16 h-72 w-72 rounded-full bg-orange-500/10 blur-3xl" />
+                        <div aria-hidden="true" className="pointer-events-none absolute -right-28 bottom-0 h-80 w-80 rounded-full bg-amber-300/10 blur-3xl" />
+                        <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
+                            <div className="max-w-2xl">
+                                <span className="inline-flex items-center gap-2 rounded-full border border-orange-300/20 bg-orange-400/10 px-4 py-2 text-xs font-semibold tracking-wide text-orange-200">
+                                    <Sparkles size={15} />
+                                    Your neighborhood, served fresh
+                                </span>
+                                <h1 className="mt-6 text-4xl font-black leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
+                                    Good food.
+                                    <span className="mt-1 block text-orange-300">Good mood.</span>
+                                    <span className="mt-1 block">Right to your door.</span>
+                                </h1>
+                                <p className="mt-5 max-w-xl text-base leading-7 text-slate-300 sm:text-lg">
+                                    Find a new favorite from local kitchens, then get it delivered while it is still warm.
+                                </p>
+                                <form onSubmit={handleSearch} className="mt-8 flex w-full max-w-xl flex-col gap-2 rounded-2xl border border-white/10 bg-slate-950/70 p-2 shadow-2xl shadow-black/20 focus-within:border-orange-300/50 sm:flex-row">
+                                    <label className="flex min-w-0 flex-1 items-center gap-3 px-3">
+                                        <Search className="shrink-0 text-slate-400" size={19} />
+                                        <span className="sr-only">Search restaurants or dishes</span>
+                                        <input type="search" placeholder="What are you craving?" value={keyword} onChange={(e) => setKeyword(e.target.value)} className="min-w-0 flex-1 bg-transparent py-3 text-sm text-white outline-none placeholder:text-slate-500 sm:text-base" />
+                                    </label>
+                                    <button type="submit" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-orange-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-orange-950/30 transition hover:bg-orange-400 active:scale-[0.98]">
+                                        Find food <ArrowRight size={17} />
                                     </button>
-                                ))}
+                                </form>
+                                <div className="mt-5 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                                    <span className="mr-1 font-medium text-slate-500">Popular:</span>
+                                    {["Momos", "Pizza", "Burger", "Biryani", "Coffee"].map((tag) => (
+                                        <button key={tag} type="button" onClick={() => { setKeyword(tag); navigate("/restaurant?keyword=" + encodeURIComponent(tag)); }} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 transition hover:border-orange-300/30 hover:bg-orange-400/10 hover:text-orange-200">
+                                            {tag}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm text-slate-300">
+                                    <span className="inline-flex items-center gap-2"><Truck size={17} className="text-orange-300" /> Local delivery</span>
+                                    <span className="inline-flex items-center gap-2"><ShieldCheck size={17} className="text-orange-300" /> Secure checkout</span>
+                                    <span className="inline-flex items-center gap-2"><Clock size={17} className="text-orange-300" /> Order updates</span>
+                                </div>
+                            </div>
+                            <div className="relative mx-auto w-full max-w-xl">
+                                <div aria-hidden="true" className="absolute -inset-3 rotate-3 rounded-[2rem] bg-gradient-to-br from-orange-400/20 via-orange-300/5 to-transparent blur-sm" />
+                                <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-slate-900 shadow-2xl shadow-black/40">
+                                    {foods[0] ? (
+                                        <>
+                                            <div className="relative aspect-[4/3] overflow-hidden bg-slate-800">
+                                                <img src={foods[0].image || "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38"} alt={foods[0].name} fetchPriority="high" className="h-full w-full object-cover" />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/10 to-transparent" />
+                                                <span className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-slate-950/65 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
+                                                    <Flame size={14} className="text-orange-300" /> Popular today
+                                                </span>
+                                                <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
+                                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-200">A local favorite</p>
+                                                    <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">{foods[0].name}</h2>
+                                                    <div className="mt-3 flex items-center justify-between gap-4">
+                                                        <span className="line-clamp-1 text-sm text-slate-300">{foods[0].description || "Freshly made and ready to enjoy."}</span>
+                                                        <span className="shrink-0 rounded-full bg-white px-3 py-1.5 text-sm font-extrabold text-slate-900">Rs. {foods[0].price}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-px bg-white/10">
+                                                {foods.slice(1, 3).map((food) => (
+                                                    <div key={food.id || food._id} className="flex min-w-0 items-center gap-3 bg-slate-900 p-3 sm:p-4">
+                                                        <img src={food.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c"} alt="" loading="lazy" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
+                                                        <div className="min-w-0"><p className="truncate text-xs font-bold text-white sm:text-sm">{food.name}</p><p className="mt-1 text-xs text-orange-200">Rs. {food.price}</p></div>
+                                                    </div>
+                                                ))}
+                                                {foods.length === 1 && <div className="bg-slate-900 p-4 text-xs text-slate-400">Explore more dishes from local restaurants.</div>}
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="grid min-h-72 place-items-center p-8 text-center">
+                                            <div><Utensils size={36} className="mx-auto text-orange-300" /><p className="mt-4 text-sm text-slate-300">Fresh picks from local kitchens are on the way.</p></div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -437,7 +463,7 @@ export default function Home() {
                                                 <div className="flex justify-between items-center pt-3 border-t border-gray-800/80 mt-2">
                                                     <div className="flex flex-col">
                                                         <span className="text-[10px] uppercase font-semibold text-gray-500">Price</span>
-                                                        <span className="font-extrabold text-btn text-lg tracking-tight">Rs. {foodItem.price}</span>
+                                                        <span className="price-highlight text-lg tracking-tight">Rs. {foodItem.price}</span>
                                                     </div>
 
                                                     <button
