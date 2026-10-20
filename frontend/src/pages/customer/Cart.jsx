@@ -201,7 +201,7 @@ export default function Cart() {
                                         <div className="flex items-center justify-between mt-4">
                                             <div>
                                                 <span className="text-xs text-gray-400 block">Total Price</span>
-                                                <span className="font-extrabold text-btn text-base sm:text-lg">
+                                                <span className="price-highlight text-base sm:text-lg">
                                                     Rs. {price * cartItem.quantity}
                                                 </span>
                                             </div>
@@ -288,7 +288,7 @@ export default function Cart() {
                                     <span className="text-xs text-gray-400 block font-medium">Total Payable Amount</span>
                                     <span className="text-xs text-gray-300">Includes all taxes & fees</span>
                                 </div>
-                                <span className="text-btn text-2xl font-black">Rs. {total}</span>
+                                <span className="price-highlight text-2xl">Rs. {total}</span>
                             </div>
 
                             <button

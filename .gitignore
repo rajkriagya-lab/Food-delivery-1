@@ -16,3 +16,6 @@ frontend/dist/
 .DS_Store
 Thumbs.db
 
+
+# Private job application CV files
+backend/private-uploads/
