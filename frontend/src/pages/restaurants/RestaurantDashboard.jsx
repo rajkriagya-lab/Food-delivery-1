@@ -25,7 +25,6 @@ export default function RestaurantDashboard() {
     const [togglingStatus, setTogglingStatus] = useState(false);
     const [updatingOrders, setUpdatingOrders] = useState(() => new Set());
 
-    // Restaurant Settings Form State
     const [restaurantForm, setRestaurantForm] = useState({
         name: "",
         description: "",
@@ -44,7 +43,6 @@ export default function RestaurantDashboard() {
             }
             setDashboard(nextDashboard);
             
-            // Populate settings form with current restaurant details
             setRestaurantForm({
                 name: nextDashboard.restaurant.name || "",
                 description: nextDashboard.restaurant.description || "",
@@ -84,7 +82,6 @@ export default function RestaurantDashboard() {
         return () => window.clearTimeout(request);
     }, []);
 
-    // Toggle Restaurant Open/Close State
     const toggleRestaurantStatus = async () => {
         try {
             setTogglingStatus(true);
@@ -102,7 +99,6 @@ export default function RestaurantDashboard() {
         }
     };
 
-    // Update Restaurant Profile (including Image URL)
     const handleUpdateRestaurant = async (event) => {
         event.preventDefault();
         try {
@@ -228,7 +224,6 @@ export default function RestaurantDashboard() {
 
     return (
         <div className="min-h-screen bg-[#f6f7fb] text-slate-800 md:flex font-sans selection:bg-orange-500 selection:text-white">
-            {/* Sidebar */}
             <aside className="w-full shrink-0 bg-white border-b border-slate-200 p-4 sm:p-6 flex flex-col z-20 shadow-sm md:sticky md:top-0 md:h-screen md:w-72 md:border-b-0 md:border-r">
                 <div className="flex items-center gap-3.5 mb-8">
                     {(restaurant.coverImage || restaurant.logo) ? (
@@ -244,7 +239,6 @@ export default function RestaurantDashboard() {
                     </div>
                 </div>
 
-                {/* Status Toggle Box */}
                 <div className="mb-6 p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                         <span className={`w-3 h-3 rounded-full animate-pulse ${restaurant.isOpen ? "bg-emerald-500 shadow-lg shadow-emerald-500/50" : "bg-rose-500"}`} />
@@ -298,7 +292,6 @@ export default function RestaurantDashboard() {
                 </div>
             </aside>
 
-            {/* Main Content */}
             <main className="min-w-0 w-full flex-1 p-4 sm:p-7 lg:p-10 md:max-w-7xl">
                 <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-7 bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm">
                     <div>
@@ -320,7 +313,6 @@ export default function RestaurantDashboard() {
                     )}
                 </header>
 
-                {/* OVERVIEW TAB */}
                 {activeTab === "overview" && (
                     <>
                         <section className="grid grid-cols-1 min-[420px]:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
@@ -380,7 +372,6 @@ export default function RestaurantDashboard() {
                     </>
                 )}
 
-                {/* ORDERS TAB */}
                 {activeTab === "orders" && (
                     <section className="space-y-4">
                         {orders.length === 0 ? (
@@ -429,7 +420,6 @@ export default function RestaurantDashboard() {
                     </section>
                 )}
 
-                {/* MENU TAB */}
                 {activeTab === "menu" && (
                     <section className="space-y-6">
                         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
@@ -495,7 +485,6 @@ export default function RestaurantDashboard() {
                     </section>
                 )}
 
-                {/* SETTINGS TAB */}
                 {activeTab === "settings" && (
                     <section className="max-w-2xl bg-white border border-slate-200 rounded-2xl p-5 sm:p-8 shadow-sm">
                         <h2 className="text-lg font-black text-slate-900 mb-2 flex items-center gap-2">
@@ -552,7 +541,6 @@ export default function RestaurantDashboard() {
                 )}
             </main>
 
-            {/* Food Creation Modal */}
             {showFoodForm && (
                 <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm p-4 flex items-center justify-center animate-fade-in">
                     <form onSubmit={createFood} className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-2xl">

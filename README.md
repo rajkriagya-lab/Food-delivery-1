@@ -137,4 +137,3 @@ cd frontend && npm run lint
 # Regenerate Prisma Client after schema edits
 cd backend && npx prisma generate
 ```
->>>>>>> 54f9387 (make pather with us, about, careear, FAQs pages)
