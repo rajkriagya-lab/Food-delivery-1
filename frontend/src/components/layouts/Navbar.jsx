@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ChevronDown, MapPin, Menu, Search, ShoppingBag, UtensilsCrossed, X } from "lucide-react";
+import { ChevronDown, LogOut, MapPin, Menu, Search, ShoppingBag, UtensilsCrossed, X } from "lucide-react";
 import ThemeToggle from "../ThemeToggle";
 import CartDrawer from "../cart/CartDrawer";
 import { useAuthStore } from "../../store/authStore";
@@ -132,6 +132,7 @@ export default function Navbar() {
                     <ThemeToggle className="border-slate-200 bg-white text-slate-600 hover:bg-slate-50" />
                     {user ? <button type="button" onClick={() => setCartOpen(true)} className="relative flex items-center gap-2 rounded-xl bg-[#ff4b3e] px-3 py-2.5 text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#e83d32]" aria-label={`Open cart with ${cartCount} items`}><ShoppingBag size={18} /><span className="hidden text-xs font-bold sm:inline">Cart</span><span className="absolute -right-2 -top-2 grid h-5 min-w-5 place-items-center rounded-full border-2 border-white bg-emerald-500 px-1 text-[10px] font-black text-white">{cartCount}</span><span className="hidden border-l border-white/30 pl-2 text-xs font-bold sm:inline">Rs. {cartTotal.toLocaleString("en-NP")}</span></button> : <Link to="/login" className="flex items-center gap-2 rounded-xl bg-[#ff4b3e] px-3.5 py-2.5 text-xs font-bold text-white transition hover:bg-[#e83d32]"><ShoppingBag size={17} /><span>Cart</span></Link>}
                     {!user ? <Link to="/login" className="hidden rounded-xl px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 sm:inline-flex">Log in</Link> : <Link to="/profile" aria-label="My profile" className="hidden rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 sm:inline-flex">Profile</Link>}
+                    {user && <button type="button" onClick={() => void logout(navigate)} title="Log out" aria-label="Log out" className="hidden items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-rose-50 hover:text-rose-600 sm:inline-flex"><LogOut size={16} /><span className="hidden md:inline">Log out</span></button>}
                     <button type="button" onClick={() => setMobileMenuOpen((open) => !open)} aria-label={mobileMenuOpen ? "Close menu" : "Open menu"} aria-expanded={mobileMenuOpen} className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 text-slate-700 xl:hidden"><Menu size={19} /></button>
                 </div>
             </div>

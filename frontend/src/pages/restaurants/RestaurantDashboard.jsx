@@ -37,6 +37,9 @@ export default function RestaurantDashboard() {
         try {
             const { data: overview } = await axiosInstance.get("/dashboard/overview");
             const nextDashboard = overview.dashboard;
+            if (!overview.success || !nextDashboard?.restaurant?.id) {
+                throw new Error(overview.message || "Your owner account does not have an approved restaurant yet.");
+            }
             setDashboard(nextDashboard);
             
             // Populate settings form with current restaurant details
@@ -46,16 +49,29 @@ export default function RestaurantDashboard() {
                 phone: nextDashboard.restaurant.phone || ""
             });
 
-            const [ordersResponse, foodsResponse, categoriesResponse] = await Promise.all([
+            const results = await Promise.allSettled([
                 axiosInstance.get("/orders/restaurant"),
                 axiosInstance.get(`/foods/restaurant/${nextDashboard.restaurant.id}`),
                 axiosInstance.get(`/categories/restaurant/${nextDashboard.restaurant.id}`),
             ]);
-            setOrders(ordersResponse.data.order || ordersResponse.data.orders || []);
-            setFoods(foodsResponse.data.foods || []);
-            setCategories(categoriesResponse.data.categories || []);
+            const [ordersResult, foodsResult, categoriesResult] = results;
+            if (ordersResult.status === "fulfilled") {
+                setOrders(ordersResult.value.data.order || ordersResult.value.data.orders || []);
+            } else {
+                toast.error(ordersResult.reason.response?.data?.message || "Unable to load restaurant orders");
+            }
+            if (foodsResult.status === "fulfilled") {
+                setFoods(foodsResult.value.data.foods || []);
+            } else {
+                toast.error(foodsResult.reason.response?.data?.message || "Unable to load your menu");
+            }
+            if (categoriesResult.status === "fulfilled") {
+                setCategories(categoriesResult.value.data.categories || []);
+            } else {
+                toast.error(categoriesResult.reason.response?.data?.message || "Unable to load menu categories");
+            }
         } catch (error) {
-            toast.error(error.response?.data?.message || "Unable to load the restaurant dashboard");
+            toast.error(error.response?.data?.message || error.message || "Unable to load the restaurant dashboard");
         } finally {
             setLoading(false);
         }
@@ -74,7 +90,7 @@ export default function RestaurantDashboard() {
             const { data } = await axiosInstance.put(`/restaurants/update/${restaurant.id}`, { isOpen: newStatus });
             setDashboard((prev) => ({
                 ...prev,
-                restaurant: { ...prev.restaurant, isOpen: data.isOpen ?? newStatus }
+                restaurant: { ...prev.restaurant, isOpen: data.restaurant?.isOpen ?? data.isOpen ?? newStatus }
             }));
             toast.success(newStatus ? "Restaurant is now OPEN for orders!" : "Restaurant is now CLOSED.");
         } catch (error) {
@@ -164,8 +180,27 @@ export default function RestaurantDashboard() {
         }
     };
 
-    if (loading) return <div className="min-h-screen bg-[#0b0f19] flex items-center justify-center text-white"><Loader2 className="animate-spin text-orange-500" size={42} /></div>;
-    if (!dashboard) return <div className="min-h-screen bg-[#0b0f19] text-white p-10 flex items-center justify-center font-medium">Restaurant dashboard could not be loaded.</div>;
+    if (loading) return (
+        <div className="relative flex min-h-screen items-center justify-center bg-[#0b0f19] text-white">
+            <Loader2 className="animate-spin text-orange-500" size={42} aria-label="Loading restaurant dashboard" />
+            <button
+                type="button"
+                onClick={() => void logout(navigate)}
+                className="absolute right-5 top-5 flex items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-2.5 text-sm font-semibold text-rose-300 transition hover:bg-rose-500/20"
+            >
+                <LogOut size={16} /> Log out
+            </button>
+        </div>
+    );
+    if (!dashboard) return (
+        <div className="min-h-screen bg-[#0b0f19] px-5 text-white flex items-center justify-center">
+            <section className="max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 text-center">
+                <h1 className="text-lg font-bold">Restaurant dashboard could not be loaded</h1>
+                <p className="mt-2 text-sm text-slate-400">Check your connection and sign in with the restaurant owner account linked to an approved restaurant.</p>
+                <button type="button" onClick={() => { setLoading(true); void loadDashboard(); }} className="mt-5 rounded-xl bg-orange-600 px-4 py-2.5 text-sm font-bold hover:bg-orange-500">Try again</button>
+            </section>
+        </div>
+    );
 
     const pendingOrders = orders.filter((order) => order.orderStatus === "PENDING").length;
     const navItems = [
@@ -176,9 +211,9 @@ export default function RestaurantDashboard() {
     ];
 
     return (
-        <div className="min-h-screen bg-[#0b0f19] text-slate-100 md:flex font-sans selection:bg-orange-500 selection:text-white">
+        <div className="min-h-screen bg-[#f6f7fb] text-slate-800 md:flex font-sans selection:bg-orange-500 selection:text-white">
             {/* Sidebar */}
-            <aside className="md:sticky md:top-0 md:h-screen md:w-72 shrink-0 bg-[#111827]/80 backdrop-blur-md border-b md:border-b-0 md:border-r border-slate-800/80 p-6 flex flex-col z-20">
+            <aside className="md:sticky md:top-0 md:h-screen md:w-72 shrink-0 bg-white border-b md:border-b-0 md:border-r border-slate-200 p-6 flex flex-col z-20 shadow-sm">
                 <div className="flex items-center gap-3.5 mb-8">
                     {(restaurant.coverImage || restaurant.logo) ? (
                         <img src={restaurant.coverImage || restaurant.logo} alt={restaurant.name} className="w-12 h-12 rounded-2xl object-cover shadow-md border border-slate-700" />

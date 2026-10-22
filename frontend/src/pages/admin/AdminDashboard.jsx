@@ -30,25 +30,38 @@ export default function AdminDashboard() {
 
   const loadDashboard = async (isRefresh = false) => {
     isRefresh ? setRefreshing(true) : setLoading(true);
-    try {
-      const [overviewRes, usersRes, restaurantsRes, ordersRes, applicationsRes] = await Promise.all([
+    const requests = [
         axiosInstance.get("/admin/overview"),
         axiosInstance.get("/admin/users"),
         axiosInstance.get("/admin/restaurants"),
         axiosInstance.get("/admin/orders"),
         axiosInstance.get("/admin/partner-applications"),
-      ]);
-      setOverview(overviewRes.data.overview);
-      setUsers(usersRes.data.users || []);
-      setRestaurants(restaurantsRes.data.restaurants || []);
-      setOrders(ordersRes.data.orders || []);
-      setApplications(applicationsRes.data.applications || []);
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Unable to load admin dashboard");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+    ];
+    const results = await Promise.allSettled(requests);
+    const setters = [
+      (data) => setOverview(data.overview),
+      (data) => setUsers(data.users || []),
+      (data) => setRestaurants(data.restaurants || []),
+      (data) => setOrders(data.orders || []),
+      (data) => setApplications(data.applications || []),
+    ];
+    const names = ["overview", "users", "restaurants", "orders", "partner applications"];
+    const failures = [];
+
+    results.forEach((result, index) => {
+      if (result.status === "fulfilled") {
+        setters[index](result.value.data);
+      } else {
+        failures.push(names[index]);
+      }
+    });
+
+    if (failures.length) {
+      const firstError = results.find((result) => result.status === "rejected")?.reason;
+      toast.error(firstError?.response?.data?.message || `Unable to load ${failures.join(", ")}. Other dashboard data is still available.`);
     }
+    setLoading(false);
+    setRefreshing(false);
   };
 
   useEffect(() => {
@@ -71,8 +84,8 @@ export default function AdminDashboard() {
     try {
       await axiosInstance.delete(`/admin/users/${target.id}`);
       setUsers((current) => current.filter((item) => item.id !== target.id));
-      setOverview((current) => current ? { ...current, totalUsers: Math.max(0, current.totalUsers - 1) } : current);
       toast.success("User removed");
+      await loadDashboard(true);
     } catch (error) {
       toast.error(error.response?.data?.message || "Unable to remove user");
     }
@@ -201,7 +214,7 @@ function Overview({ overview, orders, restaurants, setActiveTab }) {
     ["Total revenue", formatCurrency(overview?.totalRevenue), CircleDollarSign, "text-emerald-400"], 
     ["Total orders", overview?.totalOrders || 0, Package, "text-blue-400"], 
     ["Customers", overview?.totalCustomers || 0, Users, "text-violet-400"], 
-    ["Partners", overview?.totalRestaurants || 0, Building2, "text-orange-400"]
+    ["Restaurants", overview?.totalRestaurants ?? 0, Building2, "text-orange-400"]
   ];
 
   return (
@@ -231,6 +244,7 @@ function Overview({ overview, orders, restaurants, setActiveTab }) {
                 <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-slate-800 text-orange-400"><Package size={17} /></div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold text-white">{order.user?.name || "Customer"}</p>
+                  <p className="truncate text-[11px] text-slate-500">{order.user?.email || "Customer account"}</p>
                   <p className="truncate text-xs text-slate-500">{order.restaurant?.name || "Restaurant"} · {formatDate(order.createdAt)}</p>
                 </div>
                 <div className="text-right">
@@ -331,6 +345,7 @@ function OrdersTable({ orders }) {
           <div className="grid h-10 w-10 place-items-center rounded-xl bg-slate-800 text-orange-400"><Package size={18} /></div>
           <div className="min-w-40 flex-1">
             <p className="font-bold text-white">{item.user?.name || "Customer"}</p>
+            <p className="text-xs text-slate-500">{item.user?.email || "Customer account"}</p>
             <p className="text-xs text-slate-500">{item.restaurant?.name || "Restaurant"} · {formatDate(item.createdAt)}</p>
           </div>
           <p className="text-sm font-bold text-white">{formatCurrency(item.grandTotal || item.grantTotal)}</p>
