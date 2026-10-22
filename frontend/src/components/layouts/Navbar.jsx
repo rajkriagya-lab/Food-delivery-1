@@ -1,216 +1,142 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, Menu, X, LogOut, ChevronRight, UtensilsCrossed } from 'lucide-react';
-import { useAuthStore } from '../../store/authStore';
-import axiosInstance from '../../Api/axios';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ChevronDown, MapPin, Menu, Search, ShoppingBag, UtensilsCrossed, X } from "lucide-react";
+import ThemeToggle from "../ThemeToggle";
+import CartDrawer from "../cart/CartDrawer";
+import { useAuthStore } from "../../store/authStore";
+import axiosInstance from "../../Api/axios";
+
+const addressStorageKey = "khaana-delivery-address";
+const readAddress = () => {
+    try { return JSON.parse(localStorage.getItem(addressStorageKey) || "null"); } catch { return null; }
+};
 
 export default function Navbar() {
     const { logout, user } = useAuthStore();
     const navigate = useNavigate();
     const location = useLocation();
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const searchRef = useRef(null);
+    const [search, setSearch] = useState("");
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [cartOpen, setCartOpen] = useState(false);
     const [cartCount, setCartCount] = useState(0);
+    const [cartTotal, setCartTotal] = useState(0);
+    const [address, setAddress] = useState(readAddress);
+    const [addressOpen, setAddressOpen] = useState(false);
+    const [addressDraft, setAddressDraft] = useState({ street: "", city: address?.city || "" });
+    const [savedAddresses, setSavedAddresses] = useState([]);
 
-    // Fetch cart item count for the badge safely
-    useEffect(() => {
-        let isMounted = true;
-        if (user) {
-            const fetchCartCount = async () => {
-                try {
-                    const res = await axiosInstance.get('/cart');
-                    const items = res.data.cart?.items || res.data.items || [];
-                    const totalQty = items.reduce((acc, item) => acc + item.quantity, 0);
-                    if (isMounted) setCartCount(totalQty);
-                } catch {
-                    if (isMounted) setCartCount(0);
-                }
-            };
-            fetchCartCount();
+    const loadCartSummary = useCallback(async () => {
+        if (!user || user.role !== "CUSTOMER") {
+            setCartCount(0);
+            setCartTotal(0);
+            return;
         }
-        return () => {
-            isMounted = false;
-        };
-    }, [user, location.pathname]);
+        try {
+            const { data } = await axiosInstance.get("/cart");
+            setCartCount((data.items || []).reduce((sum, item) => sum + Number(item.quantity || 0), 0));
+            setCartTotal(Number(data.totalAmount || 0));
+        } catch {
+            setCartCount(0);
+            setCartTotal(0);
+        }
+    }, [user]);
 
-    const closeMobileMenu = () => setIsMobileMenuOpen(false);
+    useEffect(() => {
+        const refreshId = window.setTimeout(() => { void loadCartSummary(); }, 0);
+        return () => window.clearTimeout(refreshId);
+    }, [loadCartSummary, location.pathname]);
+
+    useEffect(() => {
+        const refresh = () => void loadCartSummary();
+        window.addEventListener("cart:updated", refresh);
+        return () => window.removeEventListener("cart:updated", refresh);
+    }, [loadCartSummary]);
+
+    useEffect(() => {
+        const onKeyDown = (event) => {
+            const target = event.target;
+            const isTyping = target instanceof HTMLElement && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
+            if ((event.key === "/" && !isTyping) || ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k")) {
+                event.preventDefault();
+                searchRef.current?.focus();
+            }
+            if (event.key === "Escape") {
+                setAddressOpen(false);
+                setMobileMenuOpen(false);
+            }
+        };
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, []);
+
+    const openAddressPicker = async () => {
+        setAddressOpen((open) => !open);
+        setAddressDraft({ street: address?.street || "", city: address?.city || "" });
+        if (user?.role === "CUSTOMER") {
+            try {
+                const { data } = await axiosInstance.get("/address/my");
+                setSavedAddresses(data.addresses || []);
+            } catch {
+                setSavedAddresses([]);
+            }
+        }
+    };
+
+    const selectAddress = (selected) => {
+        const next = { id: selected.id, street: selected.street, city: selected.city };
+        setAddress(next);
+        localStorage.setItem(addressStorageKey, JSON.stringify(next));
+        setAddressOpen(false);
+    };
+
+    const saveAddress = (event) => {
+        event.preventDefault();
+        const next = { street: addressDraft.street.trim(), city: addressDraft.city.trim() };
+        if (!next.street || !next.city) return;
+        setAddress(next);
+        localStorage.setItem(addressStorageKey, JSON.stringify(next));
+        setAddressOpen(false);
+    };
+
+    const submitSearch = (event) => {
+        event.preventDefault();
+        if (!search.trim()) return;
+        setMobileMenuOpen(false);
+        navigate(`/restaurant?keyword=${encodeURIComponent(search.trim())}`);
+    };
 
     const navLinks = [
-        { name: 'Home', path: '/' },
-        { name: 'Restaurant', path: '/restaurant' },
-        { name: 'Cuisines', path: '/cuisines' },
-        { name: 'Offers', path: '/offers' },
-        { name: 'FAQs', path: '/faq' },
-        { name: 'Track Order', path: '/track' },
+        { label: "Restaurants", to: "/restaurant" },
+        { label: "Cuisines", to: "/cuisines" },
+        { label: "Offers", to: "/offers" },
     ];
 
-    return (
-        <nav className="bg-slate-950/80 backdrop-blur-md border-b border-slate-800/60 sticky top-0 z-50 transition-all">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
-                
-                {/* Brand Logo with Icon */}
-                <Link to="/" className="flex items-center gap-2.5 group">
-                    <div className="w-9 h-9 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500 group-hover:scale-105 transition-transform">
-                        <UtensilsCrossed size={18} />
-                    </div>
-                    <span className="text-xl font-extrabold tracking-wider text-white">
-                        KHAANA<span className="text-orange-500">.</span>
-                    </span>
-                </Link>
+    return <>
+        <header className="freshbite-header sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur-xl">
+            <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6 lg:flex-nowrap lg:gap-5 lg:px-8">
+                <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="FreshBite home"><span className="grid h-10 w-10 place-items-center rounded-2xl bg-[#ff4b3e] text-white shadow-sm"><UtensilsCrossed size={20} /></span><span className="text-lg font-black tracking-tight text-slate-900 sm:text-xl">Fresh<span className="text-[#ff4b3e]">Bite</span></span></Link>
 
-                {/* Desktop Navigation Links - Clean Pill Design */}
-                <div className="hidden md:flex items-center gap-1 bg-slate-900/80 border border-slate-800/80 px-2 py-1 rounded-full shadow-sm">
-                    {navLinks.map((link) => {
-                        const isActive = location.pathname === link.path;
-                        return (
-                            <Link
-                                key={link.name}
-                                to={link.path}
-                                className={`px-4 py-2 rounded-full text-xs font-medium transition-all duration-200 ${
-                                    isActive
-                                        ? 'bg-orange-500 text-white font-semibold shadow-sm'
-                                        : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-                                }`}
-                            >
-                                {link.name}
-                            </Link>
-                        );
-                    })}
+                <div className="relative order-3 w-full shrink-0 lg:order-none lg:w-auto">
+                    <button type="button" onClick={() => void openAddressPicker()} aria-expanded={addressOpen} aria-haspopup="dialog" className="flex max-w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left transition hover:bg-slate-50 sm:px-3"><MapPin size={18} className="shrink-0 text-[#ff4b3e]" /><span className="min-w-0"><span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Deliver to</span><span className="block max-w-44 truncate text-xs font-bold text-slate-800">{address?.city || "Choose your location"}</span></span><ChevronDown size={14} className="text-slate-400" /></button>
+                    {addressOpen && <><button type="button" aria-label="Close address picker" className="fixed inset-0 z-40 cursor-default" onClick={() => setAddressOpen(false)} /><div role="dialog" aria-label="Choose delivery address" className="absolute left-0 top-full z-50 mt-2 w-[min(92vw,360px)] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"><div className="flex items-start justify-between"><div><h2 className="text-sm font-extrabold text-slate-900">Delivery address</h2><p className="mt-1 text-xs text-slate-500">Choose a saved address or add a delivery area.</p></div><button onClick={() => setAddressOpen(false)} aria-label="Close" className="text-slate-400 hover:text-slate-700"><X size={17} /></button></div>
+                        {savedAddresses.length > 0 && <div className="mt-3 max-h-36 space-y-1 overflow-auto">{savedAddresses.map((saved) => <button key={saved.id} type="button" onClick={() => selectAddress(saved)} className="w-full rounded-xl p-2.5 text-left transition hover:bg-slate-50"><span className="block text-xs font-bold text-slate-800">{saved.street}</span><span className="text-xs text-slate-500">{saved.city}</span></button>)}</div>}
+                        <form onSubmit={saveAddress} className="mt-3 space-y-2 border-t border-slate-100 pt-3"><label className="block text-xs font-semibold text-slate-600">Street or neighborhood<input required value={addressDraft.street} onChange={(event) => setAddressDraft({ ...addressDraft, street: event.target.value })} placeholder="e.g. Lazimpat, Ward 2" className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-emerald-400" /></label><label className="block text-xs font-semibold text-slate-600">City<input required value={addressDraft.city} onChange={(event) => setAddressDraft({ ...addressDraft, city: event.target.value })} placeholder="e.g. Kathmandu" className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-emerald-400" /></label><button className="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700">Use this address</button></form><p className="mt-2 text-[10px] leading-4 text-slate-400">New locations are saved on this device. Signed-in users can choose an address from their account.</p></div></>}
                 </div>
 
-                {/* Action Elements / Auth State */}
-                <div className="flex items-center gap-3">
-                    {!user ? (
-                        <div className="hidden sm:flex items-center gap-2">
-                            <Link
-                                to="/login"
-                                className="text-slate-300 hover:text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-slate-900 transition-all"
-                            >
-                                Login
-                            </Link>
-                            <Link
-                                to="/register"
-                                className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm transition-all"
-                            >
-                                Register
-                            </Link>
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-2">
-                            {/* Cart Icon with Badge */}
-                            <Link
-                                to="/cart"
-                                className="relative p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 transition-all group"
-                                aria-label="Cart"
-                            >
-                                <ShoppingCart size={18} className="group-hover:scale-105 transition-transform" />
-                                {cartCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow">
-                                        {cartCount}
-                                    </span>
-                                )}
-                            </Link>
+                <form onSubmit={submitSearch} className="order-4 flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 focus-within:border-emerald-400 focus-within:bg-white lg:order-none"><Search size={17} className="shrink-0 text-slate-400" /><label className="sr-only" htmlFor="header-search">Search food and restaurants</label><input ref={searchRef} id="header-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search food, restaurants..." className="min-w-0 flex-1 bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400" /><kbd className="hidden rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] text-slate-400 md:inline">/</kbd></form>
 
-                            {/* Profile Link */}
-                            <Link
-                                to="/profile"
-                                className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 transition-all group hidden sm:flex items-center"
-                                aria-label="My profile"
-                            >
-                                <User size={18} className="group-hover:scale-105 transition-transform" />
-                            </Link>
+                <nav className="hidden shrink-0 items-center gap-4 xl:flex">{navLinks.map((link) => <Link key={link.to} to={link.to} className={`text-xs font-semibold transition hover:text-[#ff4b3e] ${location.pathname.startsWith(link.to) ? "text-[#ff4b3e]" : "text-slate-600"}`}>{link.label}</Link>)}</nav>
 
-                            {/* Desktop Logout Button */}
-                            <button
-                                onClick={() => logout(navigate)}
-                                className="hidden sm:flex items-center gap-1.5 text-slate-400 hover:text-red-400 text-xs font-semibold px-3 py-2.5 rounded-xl hover:bg-red-500/10 transition-all cursor-pointer"
-                                title="Logout"
-                            >
-                                <LogOut size={16} />
-                                <span>Logout</span>
-                            </button>
-                        </div>
-                    )}
-
-                    {/* Mobile Menu Toggle Button */}
-                    <button
-                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                        className="md:hidden p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white focus:outline-none transition-colors"
-                        aria-label="Toggle Menu"
-                    >
-                        {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-                    </button>
+                <div className="ml-auto flex shrink-0 items-center gap-2 lg:ml-0">
+                    <ThemeToggle className="border-slate-200 bg-white text-slate-600 hover:bg-slate-50" />
+                    {user ? <button type="button" onClick={() => setCartOpen(true)} className="relative flex items-center gap-2 rounded-xl bg-[#ff4b3e] px-3 py-2.5 text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#e83d32]" aria-label={`Open cart with ${cartCount} items`}><ShoppingBag size={18} /><span className="hidden text-xs font-bold sm:inline">Cart</span><span className="absolute -right-2 -top-2 grid h-5 min-w-5 place-items-center rounded-full border-2 border-white bg-emerald-500 px-1 text-[10px] font-black text-white">{cartCount}</span><span className="hidden border-l border-white/30 pl-2 text-xs font-bold sm:inline">Rs. {cartTotal.toLocaleString("en-NP")}</span></button> : <Link to="/login" className="flex items-center gap-2 rounded-xl bg-[#ff4b3e] px-3.5 py-2.5 text-xs font-bold text-white transition hover:bg-[#e83d32]"><ShoppingBag size={17} /><span>Cart</span></Link>}
+                    {!user ? <Link to="/login" className="hidden rounded-xl px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 sm:inline-flex">Log in</Link> : <Link to="/profile" aria-label="My profile" className="hidden rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 sm:inline-flex">Profile</Link>}
+                    <button type="button" onClick={() => setMobileMenuOpen((open) => !open)} aria-label={mobileMenuOpen ? "Close menu" : "Open menu"} aria-expanded={mobileMenuOpen} className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 text-slate-700 xl:hidden"><Menu size={19} /></button>
                 </div>
             </div>
-
-            {/* Mobile Dropdown Navigation Menu */}
-            {isMobileMenuOpen && (
-                <div className="md:hidden bg-slate-950 border-t border-slate-800/80 px-4 py-5 flex flex-col gap-2 shadow-xl">
-                    <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold px-2 mb-1">Menu</div>
-                    {navLinks.map((link) => {
-                        const isActive = location.pathname === link.path;
-                        return (
-                            <Link
-                                key={link.name}
-                                to={link.path}
-                                onClick={closeMobileMenu}
-                                className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
-                                    isActive
-                                        ? 'bg-orange-500 text-white font-semibold'
-                                        : 'text-slate-300 hover:bg-slate-900 hover:text-white'
-                                }`}
-                            >
-                                <span>{link.name}</span>
-                                <ChevronRight size={14} className="opacity-50" />
-                            </Link>
-                        );
-                    })}
-
-                    {user && (
-                        <Link
-                            to="/profile"
-                            onClick={closeMobileMenu}
-                            className="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:bg-slate-900 hover:text-white transition-all"
-                        >
-                            <span className="flex items-center gap-2">
-                                <User size={16} /> My Profile
-                            </span>
-                            <ChevronRight size={14} className="opacity-50" />
-                        </Link>
-                    )}
-
-                    <div className="border-t border-slate-800/80 pt-3 mt-2 flex flex-col gap-2">
-                        {!user ? (
-                            <>
-                                <Link
-                                    to="/login"
-                                    onClick={closeMobileMenu}
-                                    className="w-full bg-slate-900 border border-slate-800 text-center px-4 py-2.5 rounded-xl text-white font-semibold text-xs hover:bg-slate-800 transition-all"
-                                >
-                                    Login
-                                </Link>
-                                <Link
-                                    to="/register"
-                                    onClick={closeMobileMenu}
-                                    className="w-full bg-orange-500 text-center px-4 py-2.5 rounded-xl text-white font-semibold text-xs hover:bg-orange-600 transition-all"
-                                >
-                                    Register
-                                </Link>
-                            </>
-                        ) : (
-                            <button
-                                onClick={() => {
-                                    closeMobileMenu();
-                                    logout(navigate);
-                                }}
-                                className="w-full text-red-400 bg-red-500/10 border border-red-500/20 text-center px-4 py-2.5 rounded-xl font-semibold text-xs hover:bg-red-500 hover:text-white transition-all cursor-pointer flex items-center justify-center gap-2"
-                            >
-                                <LogOut size={14} />
-                                <span>Logout</span>
-                            </button>
-                        )}
-                    </div>
-                </div>
-            )}
-        </nav>
-    );
+            {mobileMenuOpen && <nav className="border-t border-slate-100 bg-white px-4 py-3 shadow-sm xl:hidden">{navLinks.map((link) => <Link key={link.to} to={link.to} onClick={() => setMobileMenuOpen(false)} className="block rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">{link.label}</Link>)}{user && <><Link to="/orders" onClick={() => setMobileMenuOpen(false)} className="block rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">My orders</Link><button type="button" onClick={() => { setMobileMenuOpen(false); logout(navigate); }} className="block w-full rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-rose-600 hover:bg-rose-50">Log out</button></>}</nav>}
+        </header>
+        <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} user={user} />
+    </>;
 }

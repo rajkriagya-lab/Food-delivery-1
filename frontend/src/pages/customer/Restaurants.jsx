@@ -1,15 +1,14 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { Search, Star, MapPin, Clock, Filter, ChevronDown, Utensils, Sparkles, Flame, X, RotateCcw } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Search, Star, MapPin, Clock, Filter, Utensils, Sparkles, Flame, X, RotateCcw } from 'lucide-react';
 import axiosInstance from '../../Api/axios';
 
 export default function RestaurantList() {
     const [searchParams, setSearchParams] = useSearchParams();
-    const navigate = useNavigate();
-
     const [restaurants, setRestaurants] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState("");
 
     // Filter states initialized from URL parameters
     const [keyword, setKeyword] = useState(searchParams.get("keyword") || "");
@@ -17,31 +16,36 @@ export default function RestaurantList() {
     const [sortBy, setSortBy] = useState(searchParams.get("sort") || "rating");
 
     // Fetch categories and restaurants based on active filters
-    const fetchRestaurants = async () => {
-        setLoading(true);
+    const fetchRestaurants = useCallback(async () => {
         try {
             const queryParams = new URLSearchParams();
-            if (keyword) queryParams.set("keyword", keyword);
-            if (selectedCategory) queryParams.set("category", selectedCategory);
-            if (sortBy) queryParams.set("sort", sortBy);
+            const searchTerm = keyword.trim().toLowerCase();
 
-            const [categoryRes, restaurantRes] = await Promise.all([
+            const [categoryRes, restaurantRes, foodRes] = await Promise.all([
                 axiosInstance.get("/categories/all"),
-                axiosInstance.get(`/restaurants/all?${queryParams.toString()}`)
+                axiosInstance.get(`/search/restaurants?${queryParams.toString()}`),
+                searchTerm ? axiosInstance.get(`/search/foods?keyword=${encodeURIComponent(searchTerm)}`) : Promise.resolve({ data: { foods: [] } })
             ]);
 
             setCategories(categoryRes.data.categories || []);
-            setRestaurants(restaurantRes.data.restaurants || restaurantRes.data.restaurant || []);
+            const foodRestaurantIds = new Set((foodRes.data.foods || []).map((food) => food.restaurantId || food.restaurant?.id));
+            const allRestaurants = restaurantRes.data.restaurants || restaurantRes.data.restaurant || [];
+            setRestaurants(allRestaurants.filter((restaurant) => !searchTerm
+                || `${restaurant.name || ""} ${restaurant.description || ""} ${restaurant.city || ""}`.toLowerCase().includes(searchTerm)
+                || foodRestaurantIds.has(restaurant.id)));
+            setLoadError("");
         } catch (error) {
-            console.log("Error fetching restaurant list:", error);
+            setRestaurants([]);
+            setLoadError(error.response?.data?.message || "We couldn't load restaurants. Check your connection and try again.");
         } finally {
             setLoading(false);
         }
-    };
+    }, [keyword]);
 
     useEffect(() => {
-        fetchRestaurants();
-    }, [searchParams]);
+        const request = window.setTimeout(() => { void fetchRestaurants(); }, 250);
+        return () => window.clearTimeout(request);
+    }, [fetchRestaurants]);
 
     const handleSearchSubmit = (e) => {
         e.preventDefault();
@@ -87,6 +91,11 @@ export default function RestaurantList() {
     };
 
     const hasActiveFilters = keyword || selectedCategory;
+    const visibleRestaurants = restaurants
+        .filter((restaurant) => !selectedCategory || restaurant.categories?.some((category) => category.name === selectedCategory))
+        .sort((first, second) => sortBy === "name"
+            ? first.name.localeCompare(second.name)
+            : Number(second.rating || 0) - Number(first.rating || 0));
 
     return (
         <div className="min-h-screen bg-primary text-white selection:bg-btn selection:text-white pb-24">
@@ -115,7 +124,7 @@ export default function RestaurantList() {
                             type="text"
                             placeholder="Search restaurant or dish..."
                             value={keyword}
-                            onChange={(e) => setKeyword(e.target.value)}
+                            onChange={(e) => { setKeyword(e.target.value); setLoading(true); }}
                             className="bg-transparent px-3 py-2 text-white placeholder-gray-500 focus:outline-none text-sm w-full md:w-80 font-medium"
                         />
                         {keyword && (
@@ -202,7 +211,7 @@ export default function RestaurantList() {
                 {/* Subheader Sorting & Count */}
                 <div className="flex justify-between items-center mb-8 pt-4 border-t border-gray-800/80">
                     <p className="text-gray-300 text-xs md:text-sm font-semibold">
-                        Showing <span className="text-btn font-extrabold">{restaurants.length}</span> active restaurants
+                        Showing <span className="text-btn font-extrabold">{visibleRestaurants.length}</span> active restaurants
                     </p>
 
                     <div className="flex items-center gap-2.5 bg-card/90 border border-gray-800 px-4 py-2 rounded-2xl shadow-inner">
@@ -214,9 +223,7 @@ export default function RestaurantList() {
                             className="bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer"
                         >
                             <option value="rating" className="bg-card text-white">Highest Rated</option>
-                            <option value="deliveryTime" className="bg-card text-white">Fastest Delivery</option>
-                            <option value="costLowToHigh" className="bg-card text-white">Cost: Low to High</option>
-                            <option value="costHighToLow" className="bg-card text-white">Cost: High to Low</option>
+                            <option value="name" className="bg-card text-white">Name: A to Z</option>
                         </select>
                     </div>
                 </div>
@@ -234,25 +241,25 @@ export default function RestaurantList() {
                             </div>
                         ))}
                     </div>
-                ) : restaurants.length === 0 ? (
+                ) : visibleRestaurants.length === 0 ? (
                     <div className="bg-card/60 backdrop-blur-xl border border-gray-800 rounded-3xl py-24 text-center flex flex-col items-center justify-center gap-4 mt-6 shadow-2xl">
                         <div className="w-16 h-16 bg-btn/10 rounded-full flex items-center justify-center text-btn shadow-lg shadow-btn/20">
                             <Utensils size={32} />
                         </div>
-                        <h3 className="text-lg font-bold text-white">No restaurants found</h3>
+                        <h3 className="text-lg font-bold text-white">{loadError ? "Restaurants are unavailable" : "No restaurants found"}</h3>
                         <p className="text-gray-400 text-xs max-w-sm">
-                            We couldn't find anything matching your search criteria. Try resetting filters or searching for another dish.
+                            {loadError || "We couldn't find anything matching your search criteria. Try resetting filters or searching for another dish."}
                         </p>
-                        <button
+                        {loadError ? <button onClick={() => { setLoading(true); void fetchRestaurants(); }} className="mt-2 rounded-2xl bg-btn px-6 py-3 text-xs font-bold text-white">Try again</button> : <button
                             onClick={() => { setSearchParams({}); setKeyword(""); setSelectedCategory(""); }}
                             className="mt-2 bg-btn text-white text-xs font-bold px-6 py-3 rounded-2xl hover:opacity-95 transition-all shadow-lg shadow-btn/30 cursor-pointer active:scale-95"
                         >
                             Reset All Filters
-                        </button>
+                        </button>}
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        {restaurants.map((res) => (
+                        {visibleRestaurants.map((res) => (
                             <Link
                                 key={res._id || res.id}
                                 to={`/restaurant/${res._id || res.id}`}
@@ -261,35 +268,33 @@ export default function RestaurantList() {
                                 <div className="h-52 w-full overflow-hidden bg-gray-900 relative">
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 z-10"></div>
                                     <img
-                                        src={res.image || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5"}
+                                        src={res.coverImage || res.logo || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5"}
                                         alt={res.name}
                                         className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700"
                                     />
 
                                     {/* Rating Badge */}
-                                    {res.rating && (
+                                    {Number(res.rating) > 0 && (
                                         <div className="absolute top-3.5 right-3.5 bg-black/75 backdrop-blur-md text-amber-400 text-xs font-extrabold px-3 py-1.5 rounded-xl flex items-center gap-1 border border-white/15 shadow-xl z-20">
                                             <Star size={13} fill="currentColor" /> {res.rating}
                                         </div>
                                     )}
 
                                     {/* Delivery Time Badge */}
-                                    <div className="absolute bottom-3.5 left-3.5 bg-black/75 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 border border-white/15 shadow-xl z-25">
-                                        <Clock size={13} className="text-btn" /> {res.deliveryTime || "30-40 min"}
-                                    </div>
+                                    {res.deliveryTime && <div className="absolute bottom-3.5 left-3.5 bg-black/75 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 border border-white/15 shadow-xl z-25"><Clock size={13} className="text-btn" /> {res.deliveryTime}</div>}
                                 </div>
 
                                 <div className="p-5 flex flex-col gap-2 flex-1 justify-between">
                                     <div className="space-y-1">
                                         <h3 className="font-extrabold text-base text-white group-hover:text-btn transition-colors truncate">{res.name}</h3>
                                         <p className="text-gray-400 text-xs truncate font-medium">
-                                            {res.cuisines?.join(", ") || "Multi-cuisine, Fast Food"}
+                                            {res.categories?.map((category) => category.name).join(", ") || "Menu available"}
                                         </p>
                                     </div>
 
                                     <div className="flex items-center justify-between pt-4 mt-2 border-t border-gray-800/80 text-xs font-semibold">
                                         <span className="flex items-center gap-1.5 truncate max-w-[170px] text-gray-400">
-                                            <MapPin size={13} className="text-btn shrink-0" /> {res.address || "Kathmandu"}
+                                            <MapPin size={13} className="text-btn shrink-0" /> {res.city || res.address}
                                         </span>
                                         <span className="text-btn font-extrabold group-hover:translate-x-1 transition-transform flex items-center gap-1">
                                             Menu &rarr;

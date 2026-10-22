@@ -1,4 +1,4 @@
-import { CircleCheckBig, CircleX, Loader2 } from "lucide-react";
+import { CircleCheckBig, CircleX } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 
 export default function PaymentResult() {

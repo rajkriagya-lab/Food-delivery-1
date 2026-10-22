@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingBag, Trash2, Plus, Minus, ArrowRight, ArrowLeft, ShieldCheck, Sparkles, Tag, Loader2, ReceiptText } from 'lucide-react';
+import toast from 'react-hot-toast';
 import axiosInstance from '../../Api/axios';
 
 export default function Cart() {
@@ -9,37 +10,36 @@ export default function Cart() {
     const [cart, setCart] = useState(null);
     const [loading, setLoading] = useState(true);
     const [updatingId, setUpdatingId] = useState(null);
-    const [coupon, setCoupon] = useState('');
-    const [discount, setDiscount] = useState(0);
-    const [couponError, setCouponError] = useState('');
 
     // Fetch user cart from backend without triggering destructive layout re-loads
     const fetchCart = async (isInitial = false) => {
         try {
-            if (isInitial) setLoading(true);
             const response = await axiosInstance.get('/cart');
             // Prisma returns { success, totalItems, totalAmount, items: [...] }
             setCart(response.data);
         } catch (error) {
-            console.log('Fetch Cart Error:', error);
+            toast.error(error.response?.data?.message || 'Unable to load your cart. Please try again.');
         } finally {
             if (isInitial) setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchCart(true);
+        const request = window.setTimeout(() => { void fetchCart(true); }, 0);
 
         const handleCartUpdated = () => fetchCart(false);
         window.addEventListener('cart:updated', handleCartUpdated);
 
-        return () => window.removeEventListener('cart:updated', handleCartUpdated);
+        return () => {
+            window.clearTimeout(request);
+            window.removeEventListener('cart:updated', handleCartUpdated);
+        };
     }, []);
 
     // Update item quantity
     const updateQuantity = async (itemId, newQuantity) => {
         if (!itemId) {
-            console.error('Update Quantity Error: Item ID is undefined');
+            toast.error('This cart item could not be updated. Refresh and try again.');
             return;
         }
         if (newQuantity <= 0) {
@@ -51,8 +51,9 @@ export default function Cart() {
             await axiosInstance.put(`/cart/update/${itemId}`, { quantity: newQuantity });
             // Re-fetch clean cart state from Prisma API
             await fetchCart(false);
+            window.dispatchEvent(new Event('cart:updated'));
         } catch (error) {
-            console.log('Update Quantity Error:', error);
+            toast.error(error.response?.data?.message || 'Unable to update quantity. Please try again.');
         } finally {
             setUpdatingId(null);
         }
@@ -61,28 +62,18 @@ export default function Cart() {
     // Remove single item from cart
     const removeItem = async (itemId) => {
         if (!itemId) {
-            console.error('Remove Item Error: Item ID is undefined.');
+            toast.error('This cart item could not be removed. Refresh and try again.');
             return;
         }
         try {
             setUpdatingId(itemId);
             await axiosInstance.delete(`/cart/remove/${itemId}`);
             await fetchCart(false);
+            window.dispatchEvent(new Event('cart:updated'));
         } catch (error) {
-            console.log('Remove Item Error:', error);
+            toast.error(error.response?.data?.message || 'Unable to remove item. Please try again.');
         } finally {
             setUpdatingId(null);
-        }
-    };
-
-    // Apply Coupon
-    const applyCoupon = (e) => {
-        e.preventDefault();
-        if (coupon.trim().toUpperCase() === 'FIRST50') {
-            setDiscount(100);
-            setCouponError('');
-        } else {
-            setCouponError('Invalid coupon code. Try entering "FIRST50"');
         }
     };
 
@@ -99,7 +90,7 @@ export default function Cart() {
     const items = cart?.items || [];
     const itemsTotal = cart?.totalAmount || 0;
     const deliveryFee = items.length > 0 ? 100 : 0;
-    const total = Math.max(0, itemsTotal + deliveryFee - discount);
+    const total = itemsTotal + deliveryFee;
 
     if (items.length === 0) {
         return (
@@ -240,28 +231,27 @@ export default function Cart() {
                             <p className="text-xs text-gray-300 mb-6">Detailed cost breakdown of all items ordered.</p>
 
                             {/* Coupon Form */}
-                            <form onSubmit={applyCoupon} className="mb-6">
-                                <label className="block text-xs font-semibold text-gray-300 mb-2">Have a Promo Code?</label>
+                            <form onSubmit={(event) => event.preventDefault()} className="mb-6">
+                                <label className="block text-xs font-semibold text-gray-300 mb-2">Promo codes</label>
                                 <div className="flex gap-2">
                                     <div className="relative flex-1">
                                         <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                                         <input
                                             type="text"
-                                            placeholder="Try typing FIRST50"
-                                            value={coupon}
-                                            onChange={(e) => setCoupon(e.target.value)}
-                                            className="w-full bg-primary border border-gray-700/80 rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-white placeholder-gray-400 focus:outline-none focus:border-btn transition-colors"
+                                            placeholder="Not available yet"
+                                            disabled
+                                            className="w-full bg-primary border border-gray-700/80 rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-gray-400 placeholder-gray-500 focus:outline-none"
                                         />
                                     </div>
                                     <button
-                                        type="submit"
-                                        className="bg-btn/25 text-btn border border-btn/40 text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-btn hover:text-white transition-all cursor-pointer"
+                                        type="button"
+                                        disabled
+                                        className="bg-gray-800 text-gray-500 border border-gray-700 text-xs font-bold px-4 py-2.5 rounded-xl cursor-not-allowed"
                                     >
-                                        Apply
+                                        Unavailable
                                     </button>
                                 </div>
-                                {couponError && <p className="text-red-400 text-xs mt-1.5">{couponError}</p>}
-                                {discount > 0 && <p className="text-emerald-400 text-xs mt-1.5 font-medium">✨ Discount coupon successfully applied! (-Rs. {discount})</p>}
+                                <p className="mt-1.5 text-xs text-gray-500">Discounts will appear here when supported at checkout.</p>
                             </form>
 
                             {/* Itemized Bill List */}
@@ -274,12 +264,6 @@ export default function Cart() {
                                     <span>Safe Home Delivery Fee</span>
                                     <span className="text-white font-semibold">Rs. {deliveryFee}</span>
                                 </div>
-                                {discount > 0 && (
-                                    <div className="flex justify-between text-emerald-400">
-                                        <span>Promo Discount Savings</span>
-                                        <span>-Rs. {discount}</span>
-                                    </div>
-                                )}
                             </div>
 
                             {/* Grand Total Section */}

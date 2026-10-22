@@ -72,7 +72,7 @@ export default function Offers() {
                         Exciting <span className="text-btn">Offers</span> For You
                     </h1>
                     <p className="text-gray-400 text-sm md:text-base max-w-xl">
-                        Save coupons securely to your account wallet or copy codes directly for checkout.
+                        Save coupons to your account wallet and copy a code. Coupon discounts are not yet applied to order totals.
                     </p>
                 </div>
             </div>

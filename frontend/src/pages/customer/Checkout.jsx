@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Check, MapPin, Plus, ShoppingBag, CreditCard, Wallet, Truck, ArrowLeft, Loader2, ShieldCheck, CircleCheckBig } from "lucide-react";
 import toast from "react-hot-toast";
@@ -18,12 +18,11 @@ export default function Checkout() {
     const [orderConfirmation, setOrderConfirmation] = useState(null);
     const [paymentMethod, setPaymentMethod] = useState("CASH_ON_DELIVERY");
 
-    const deliveryFee = 100;
+    const deliveryFee = cartItems.length > 0 ? 100 : 0;
     const grandTotal = totalAmount + deliveryFee;
 
     const fetchCart = async () => {
         try {
-            setCartLoading(true);
             const { data } = await axiosInstance.get("/cart");
             setCartItems(data.items || data.cart?.items || []);
             setTotalAmount(data.totalAmount || data.cart?.totalAmount || 0);
@@ -41,14 +40,21 @@ export default function Checkout() {
                 const addressList = data.addressess || data.addresses || [];
                 setAddresses(addressList);
 
-                const defaultAddress = addressList.find((address) => address.isDefault);
+                let preferredAddressId = "";
+                try {
+                    preferredAddressId = JSON.parse(window.localStorage.getItem("khaana-delivery-address") || "null")?.id || "";
+                } catch {
+                    preferredAddressId = "";
+                }
+                const defaultAddress = addressList.find((address) => address.id === preferredAddressId)
+                    || addressList.find((address) => address.isDefault);
                 if (defaultAddress) {
                     setSelectedAddressId(defaultAddress.id);
                 } else if (addressList.length > 0) {
                     setSelectedAddressId(addressList[0].id);
                 }
             }
-        } catch (error) {
+        } catch {
             setAddresses([]);
         } finally {
             setAddressLoading(false);
@@ -56,8 +62,8 @@ export default function Checkout() {
     };
 
     useEffect(() => {
-        fetchCart();
-        fetchAddress();
+        const request = window.setTimeout(() => { void fetchCart(); void fetchAddress(); }, 0);
+        return () => window.clearTimeout(request);
     }, []);
 
     const handlePlaceOrder = async () => {
@@ -120,6 +126,10 @@ export default function Checkout() {
                 <p className="text-gray-300 text-sm font-medium">Preparing your checkout...</p>
             </div>
         );
+    }
+
+    if (cartItems.length === 0) {
+        return <main className="grid min-h-[70vh] place-items-center bg-primary px-5 py-16 text-center text-white"><section><ShoppingBag size={44} className="mx-auto mb-4 text-btn" /><h1 className="text-2xl font-black">Your cart is empty</h1><p className="mt-2 text-sm text-gray-400">Add something delicious before heading to checkout.</p><Link to="/restaurant" className="mt-6 inline-flex rounded-xl bg-btn px-5 py-3 text-sm font-bold text-white">Browse restaurants</Link></section></main>;
     }
 
     return (

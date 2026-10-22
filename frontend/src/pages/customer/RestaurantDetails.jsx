@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Clock, Heart, MapPin, ShoppingCart, Star, Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
@@ -15,7 +15,7 @@ export default function RestaurantDetails() {
     const [actionLoading, setActionLoading] = useState(null);
     const [favoriteIds, setFavoriteIds] = useState(new Set());
 
-    const fetchRestaurantDetails = async () => {
+    const fetchRestaurantDetails = useCallback(async () => {
         try {
             // Fetch using 'id' instead of 'slug'
             const { data: restaurantData } = await axiosInstance.get( 
@@ -37,12 +37,27 @@ export default function RestaurantDetails() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [id]);
 
     useEffect(() => {
         if (!id) return;
-        fetchRestaurantDetails();
-    }, [id]);
+        const request = window.setTimeout(() => { void fetchRestaurantDetails(); }, 0);
+        return () => window.clearTimeout(request);
+    }, [fetchRestaurantDetails, id]);
+
+    useEffect(() => {
+        if (user?.role !== "CUSTOMER") return undefined;
+        let active = true;
+        const request = window.setTimeout(async () => {
+            try {
+                const { data } = await axiosInstance.get("/favourites/my");
+                if (active) setFavoriteIds(new Set((data.favourites || []).map((favorite) => favorite.foodId || favorite.food?.id).filter(Boolean)));
+            } catch {
+                if (active) setFavoriteIds(new Set());
+            }
+        }, 0);
+        return () => { active = false; window.clearTimeout(request); };
+    }, [user]);
 
     // Extract unique categories safely
     const categories = [
@@ -106,11 +121,8 @@ export default function RestaurantDetails() {
 
             setFavoriteIds((prev) => {
                 const newFavorites = new Set(prev);
-                if (newFavorites.has(foodId)) {
-                    newFavorites.delete(foodId);
-                } else {
-                    newFavorites.add(foodId);
-                }
+                if (data.isFavourites) newFavorites.add(foodId);
+                else newFavorites.delete(foodId);
                 return newFavorites;
             });
         } catch (error) {
@@ -177,7 +189,7 @@ export default function RestaurantDetails() {
             {/* Restaurant Cover / Banner */}
             <div className="h-64 md:h-80 w-full relative bg-gray-900">
                 <img
-                    src={restaurant.coverImage || restaurant.image || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4"}
+                    src={restaurant.coverImage || restaurant.logo || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4"}
                     alt={restaurant.name}
                     className="w-full h-full object-cover opacity-75"
                 />
@@ -190,8 +202,8 @@ export default function RestaurantDetails() {
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
                             <div className="flex items-center gap-2 mb-2">
-                                <span className="bg-emerald-50 text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1">
-                                    <Sparkles className="w-3.5 h-3.5" /> Open Now
+                                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 ${restaurant.isOpen ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
+                                    <Sparkles className="w-3.5 h-3.5" /> {restaurant.isOpen ? "Open now" : "Currently closed"}
                                 </span>
                             </div>
                             <h1 className="text-2xl md:text-4xl font-extrabold text-gray-900">
@@ -203,18 +215,18 @@ export default function RestaurantDetails() {
                         </div>
 
                         {/* Ratings & Meta Info */}
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                            <div className="flex items-center gap-1.5 font-semibold text-gray-900">
-                                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                                <span>{restaurant.rating || "4.5"}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                                <Clock className="w-4 h-4 text-gray-400" />
-                                <span>{restaurant.deliveryTime || "30-40 min"}</span>
-                            </div>
+                            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                {Number(restaurant.rating) > 0 && <div className="flex items-center gap-1.5 font-semibold text-gray-900">
+                                    <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                                    <span>{Number(restaurant.rating).toFixed(1)}{restaurant.totalReview ? ` (${restaurant.totalReview} reviews)` : ""}</span>
+                                </div>}
+                                {restaurant.deliveryTime && <div className="flex items-center gap-1.5">
+                                    <Clock className="w-4 h-4 text-gray-400" />
+                                    <span>{restaurant.deliveryTime}</span>
+                                </div>}
                             <div className="flex items-center gap-1.5">
                                 <MapPin className="w-4 h-4 text-gray-400" />
-                                <span>{restaurant.address || "Local Area"}</span>
+                                    <span>{restaurant.city || restaurant.address}</span>
                             </div>
                         </div>
                     </div>
@@ -295,17 +307,17 @@ export default function RestaurantDetails() {
                                         <div className="flex flex-col">
                                             <span className="text-xs text-gray-400 font-medium">Price</span>
                                             <span className="price-highlight text-lg">
-                                                ${Number(food.price).toFixed(2)}
+                                                Rs. {Number(food.price).toLocaleString("en-NP")}
                                             </span>
                                         </div>
 
                                         <button
                                             onClick={() => addToCart(food.id)}
-                                            disabled={actionLoading === food.id}
-                                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 shadow-sm transition-all disabled:opacity-50"
+                                            disabled={actionLoading === food.id || !restaurant.isOpen}
+                                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 shadow-sm transition-all disabled:cursor-not-allowed disabled:opacity-50"
                                         >
                                             <ShoppingCart className="w-4 h-4" />
-                                            {actionLoading === food.id ? "Adding..." : "Add to Cart"}
+                                            {actionLoading === food.id ? "Adding..." : restaurant.isOpen ? "Add to Cart" : "Closed"}
                                         </button>
                                     </div>
                                 </div>

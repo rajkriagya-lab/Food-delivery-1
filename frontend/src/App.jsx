@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Route, Routes, Navigate, useLocation } from 'react-router-dom'
+import { Route, Routes, Navigate, Link, useLocation } from 'react-router-dom'
 import { Utensils, Flame, Sparkles } from 'lucide-react'
 import { Toaster } from 'react-hot-toast'
 
@@ -12,6 +12,7 @@ import RestaurantDashboard from './pages/restaurants/RestaurantDashboard'
 import Layout from './components/layouts/Layout'
 import Restaurants from './pages/customer/Restaurants'
 import RestaurantDetails from './pages/customer/RestaurantDetails'
+import FoodDetail from './pages/customer/foodDetail'
 import Home from './pages/customer/Home'
 import Cuisines from './pages/customer/Cuisines'
 import Offers from './pages/customer/Offers'
@@ -123,6 +124,7 @@ export default function App() {
           <Route path="/restaurants" element={<Restaurants />} />
           <Route path="/restaurant" element={<Restaurants />} />
           <Route path="/restaurant/:id" element={<RestaurantDetails />} />
+          <Route path="/food/:slug" element={<FoodDetail />} />
           <Route path="/cuisines" element={<Cuisines />} />
           <Route path="/offers" element={<Offers />} />
           <Route path="/about" element={<About />} />
@@ -221,7 +223,7 @@ export default function App() {
         <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
 
         {/* Catch-all Wildcard Route */}
-        <Route path="*" element={<Navigate to={getDashboardPath(user?.role)} replace />} />
+        <Route path="*" element={<main className="grid min-h-[70vh] place-items-center bg-primary px-5 text-center text-white"><section><p className="text-sm font-bold uppercase tracking-widest text-btn">404</p><h1 className="mt-2 text-3xl font-black">Page not found</h1><p className="mt-2 text-sm text-gray-400">That page may have moved or the link may be incorrect.</p><Link to="/" className="mt-6 inline-flex rounded-xl bg-btn px-5 py-3 text-sm font-bold text-white">Back to home</Link></section></main>} />
       </Routes>
     </div>
   )

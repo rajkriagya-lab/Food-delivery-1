@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Utensils, Search, ArrowRight, ChevronRight, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Utensils, Search, ChevronRight, Sparkles } from 'lucide-react';
 import axiosInstance from '../../Api/axios';
 
 export default function Cuisines() {
@@ -8,14 +8,20 @@ export default function Cuisines() {
     const [cuisines, setCuisines] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [loadError, setLoadError] = useState('');
 
     useEffect(() => {
         const fetchCuisines = async () => {
             try {
                 const res = await axiosInstance.get('/categories/all');
-                setCuisines(res.data.categories || res.data.cuisines || []);
+                const categories = res.data.categories || res.data.cuisines || [];
+                const uniqueCategories = new Map(categories.map((item) => {
+                    const name = typeof item === 'string' ? item : item.name;
+                    return [name?.toLowerCase(), item];
+                }).filter(([name]) => name));
+                setCuisines([...uniqueCategories.values()]);
             } catch (error) {
-                console.log('Error fetching cuisines:', error);
+                setLoadError(error.response?.data?.message || "We couldn't load categories. Please try again.");
             } finally {
                 setLoading(false);
             }
@@ -86,6 +92,8 @@ export default function Cuisines() {
                             </div>
                         ))}
                     </div>
+                ) : loadError ? (
+                    <div role="alert" className="rounded-3xl border border-rose-500/20 bg-rose-500/10 px-5 py-10 text-center text-sm text-rose-200">{loadError}</div>
                 ) : filteredCuisines.length === 0 ? (
                     <div className="bg-card/60 backdrop-blur-md border border-gray-800 rounded-3xl py-24 text-center flex flex-col items-center justify-center gap-4 mt-6 shadow-2xl">
                         <div className="h-16 w-16 rounded-full bg-btn/10 flex items-center justify-center text-btn">

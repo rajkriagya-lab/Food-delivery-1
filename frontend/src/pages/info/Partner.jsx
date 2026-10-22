@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, BadgeCheck, Bike, ChartNoAxesCombined, ChefHat, Store, UtensilsCrossed } from "lucide-react";
-import demoVideo from "../../assets/video/Browsing_KHAANA_food_delivery_app_20261017205915.mp4";
+import demoVideo from "../../assets/video/Browsing_KHAANA_food_delivery_app.mp4";
 
 const benefits = [
     { icon: ChartNoAxesCombined, title: "Reach more hungry locals", text: "Put your menu in front of customers looking for their next neighborhood favorite." },

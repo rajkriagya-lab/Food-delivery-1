@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Star, ShoppingBag, Plus, Minus, ShieldCheck, Clock, Flame, Loader2, Utensils } from 'lucide-react';
 import axiosInstance from '../../Api/axios';
+import toast from 'react-hot-toast';
 
 export default function FoodDetail() {
     const { slug } = useParams(); // Changed from id to slug to match your router
@@ -10,8 +11,6 @@ export default function FoodDetail() {
     const [food, setFood] = useState(null);
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
-    const [selectedSize, setSelectedSize] = useState('Regular');
-    const [specialInstructions, setSpecialInstructions] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
 
@@ -20,10 +19,10 @@ export default function FoodDetail() {
             try {
                 setLoading(true);
                 // Connected to your backend route: GET /single/:slug
-                const res = await axiosInstance.get(`/food/single/${slug}`);
+                const res = await axiosInstance.get(`/foods/single/${slug}`);
                 setFood(res.data.food || res.data);
             } catch (error) {
-                console.log('Fetch Food Detail Error:', error);
+                toast.error(error.response?.data?.message || 'Unable to load this dish. Please try again.');
             } finally {
                 setLoading(false);
             }
@@ -40,15 +39,13 @@ export default function FoodDetail() {
             await axiosInstance.post('/cart/add', {
                 foodId: food?._id || food?.id,
                 quantity,
-                size: selectedSize,
-                specialInstructions,
             });
             setSuccessMessage('Item successfully added to your cart!');
             setTimeout(() => {
                 setSuccessMessage('');
             }, 3000);
         } catch (error) {
-            console.log('Add to Cart Error:', error);
+            toast.error(error.response?.data?.message || 'Unable to add this dish to your cart.');
         } finally {
             setSubmitting(false);
         }
@@ -78,8 +75,7 @@ export default function FoodDetail() {
     }
 
     const basePrice = food.price || 0;
-    const sizeMultiplier = selectedSize === 'Large' ? 1.3 : selectedSize === 'Medium' ? 1.15 : 1;
-    const finalPrice = Math.round(basePrice * sizeMultiplier * quantity);
+    const finalPrice = Math.round(basePrice * quantity);
 
     return (
         <div className="min-h-screen bg-primary text-white py-10 px-5 md:px-10 selection:bg-btn selection:text-white">
@@ -131,8 +127,8 @@ export default function FoodDetail() {
                     <div className="flex flex-col justify-between">
                         <div>
                             {food.restaurant && (
-                                <Link
-                                    to={`/restaurant/${food.restaurant._id || food.restaurant}`}
+                                    <Link
+                                    to={`/restaurant/${food.restaurant.id || food.restaurant._id || food.restaurant}`}
                                     className="text-xs font-bold text-btn uppercase tracking-wider hover:underline flex items-center gap-1 mb-1"
                                 >
                                     <Utensils size={13} />
@@ -149,7 +145,7 @@ export default function FoodDetail() {
                             <div className="flex flex-wrap items-center gap-4 mt-5 text-xs text-gray-300 font-medium border-y border-gray-800/80 py-4">
                                 <div className="flex items-center gap-1.5">
                                     <Clock size={16} className="text-btn" />
-                                    <span>20-30 mins delivery</span>
+                                    <span>Delivery time varies by location</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                     <ShieldCheck size={16} className="text-btn" />
@@ -161,37 +157,6 @@ export default function FoodDetail() {
                                 </div>
                             </div>
 
-                            {/* Size Selection */}
-                            <div className="mt-6">
-                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Choose Portion / Size</label>
-                                <div className="grid grid-cols-3 gap-2.5">
-                                    {['Regular', 'Medium', 'Large'].map((size) => (
-                                        <button
-                                            key={size}
-                                            type="button"
-                                            onClick={() => setSelectedSize(size)}
-                                            className={`py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${selectedSize === size
-                                                    ? 'bg-btn text-white border-btn shadow-lg shadow-btn/30'
-                                                    : 'bg-primary border-gray-800 text-gray-400 hover:text-white hover:border-gray-700'
-                                                }`}
-                                        >
-                                            {size}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Special Instructions */}
-                            <div className="mt-5">
-                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Special Instructions (Optional)</label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g., Make it extra spicy, no onions please..."
-                                    value={specialInstructions}
-                                    onChange={(e) => setSpecialInstructions(e.target.value)}
-                                    className="w-full bg-primary border border-gray-700/80 rounded-xl px-4 py-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-btn transition-colors"
-                                />
-                            </div>
                         </div>
 
                         {/* Quantity and Checkout Bar */}

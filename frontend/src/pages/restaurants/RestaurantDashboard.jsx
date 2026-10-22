@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { BarChart3, Clock3, LayoutDashboard, Loader2, LogOut, MapPin, Package, Plus, RefreshCw, Store, Tag, Trash2, Truck, UtensilsCrossed, Power, Settings, Image as ImageIcon } from "lucide-react";
+import { BarChart3, Clock3, LayoutDashboard, Loader2, LogOut, MapPin, Package, Plus, RefreshCw, Store, Tag, Trash2, Truck, UtensilsCrossed, Power, Settings } from "lucide-react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../Api/axios";
 import { useAuthStore } from "../../store/authStore";
 
-const initialFood = { name: "", description: "", price: "", categoryId: "", image: "" };
+const initialFood = { name: "", description: "", price: "", categoryId: "", image: null };
 const statusOptions = ["PENDING", "PROCESSING", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED"];
 const formatStatus = (value) => value.replaceAll("_", " ");
 
@@ -28,14 +28,12 @@ export default function RestaurantDashboard() {
     const [restaurantForm, setRestaurantForm] = useState({
         name: "",
         description: "",
-        phone: "",
-        image: ""
+        phone: ""
     });
 
     const restaurant = dashboard?.restaurant;
 
     const loadDashboard = async () => {
-        setLoading(true);
         try {
             const { data: overview } = await axiosInstance.get("/dashboard/overview");
             const nextDashboard = overview.dashboard;
@@ -45,8 +43,7 @@ export default function RestaurantDashboard() {
             setRestaurantForm({
                 name: nextDashboard.restaurant.name || "",
                 description: nextDashboard.restaurant.description || "",
-                phone: nextDashboard.restaurant.phone || "",
-                image: nextDashboard.restaurant.image || ""
+                phone: nextDashboard.restaurant.phone || ""
             });
 
             const [ordersResponse, foodsResponse, categoriesResponse] = await Promise.all([
@@ -64,25 +61,24 @@ export default function RestaurantDashboard() {
         }
     };
 
-    useEffect(() => { loadDashboard(); }, []);
+    useEffect(() => {
+        const request = window.setTimeout(() => { void loadDashboard(); }, 0);
+        return () => window.clearTimeout(request);
+    }, []);
 
     // Toggle Restaurant Open/Close State
     const toggleRestaurantStatus = async () => {
         try {
             setTogglingStatus(true);
             const newStatus = !restaurant.isOpen;
-            const { data } = await axiosInstance.patch(`/restaurants/status`, { isOpen: newStatus });
+            const { data } = await axiosInstance.put(`/restaurants/update/${restaurant.id}`, { isOpen: newStatus });
             setDashboard((prev) => ({
                 ...prev,
                 restaurant: { ...prev.restaurant, isOpen: data.isOpen ?? newStatus }
             }));
             toast.success(newStatus ? "Restaurant is now OPEN for orders!" : "Restaurant is now CLOSED.");
         } catch (error) {
-            setDashboard((prev) => ({
-                ...prev,
-                restaurant: { ...prev.restaurant, isOpen: !prev.restaurant.isOpen }
-            }));
-            toast.success("Store status updated locally");
+            toast.error(error.response?.data?.message || "Unable to update store status");
         } finally {
             setTogglingStatus(false);
         }
@@ -93,7 +89,7 @@ export default function RestaurantDashboard() {
         event.preventDefault();
         try {
             setSaving(true);
-            const { data } = await axiosInstance.patch("/restaurants/update", restaurantForm);
+            await axiosInstance.put(`/restaurants/update/${restaurant.id}`, restaurantForm);
             setDashboard((prev) => ({
                 ...prev,
                 restaurant: { ...prev.restaurant, ...restaurantForm }
@@ -137,7 +133,14 @@ export default function RestaurantDashboard() {
         if (!foodForm.categoryId) return toast.error("Choose a category first");
         try {
             setSaving(true);
-            const { data } = await axiosInstance.post("/foods/create", { ...foodForm, price: Number(foodForm.price), restaurantId: restaurant.id });
+            const payload = new FormData();
+            payload.append("name", foodForm.name.trim());
+            payload.append("description", foodForm.description.trim());
+            payload.append("price", String(Number(foodForm.price)));
+            payload.append("categoryId", foodForm.categoryId);
+            payload.append("restaurantId", restaurant.id);
+            if (foodForm.image) payload.append("image", foodForm.image);
+            const { data } = await axiosInstance.post("/foods/create", payload, { headers: { "Content-Type": "multipart/form-data" } });
             const category = categories.find((item) => item.id === data.food.categoryId);
             setFoods((current) => [{ ...data.food, category }, ...current]);
             setFoodForm(initialFood);
@@ -177,8 +180,8 @@ export default function RestaurantDashboard() {
             {/* Sidebar */}
             <aside className="md:sticky md:top-0 md:h-screen md:w-72 shrink-0 bg-[#111827]/80 backdrop-blur-md border-b md:border-b-0 md:border-r border-slate-800/80 p-6 flex flex-col z-20">
                 <div className="flex items-center gap-3.5 mb-8">
-                    {restaurant.image ? (
-                        <img src={restaurant.image} alt={restaurant.name} className="w-12 h-12 rounded-2xl object-cover shadow-md border border-slate-700" />
+                    {(restaurant.coverImage || restaurant.logo) ? (
+                        <img src={restaurant.coverImage || restaurant.logo} alt={restaurant.name} className="w-12 h-12 rounded-2xl object-cover shadow-md border border-slate-700" />
                     ) : (
                         <div className="p-3 bg-gradient-to-tr from-orange-600 to-amber-500 rounded-2xl shadow-lg shadow-orange-500/20 text-white">
                             <Store size={24} />
@@ -281,8 +284,8 @@ export default function RestaurantDashboard() {
                                 <h2 className="font-bold text-base text-white flex items-center gap-2 mb-4">
                                     <Store size={18} className="text-orange-500" /> Restaurant Details
                                 </h2>
-                                {restaurant.image && (
-                                    <img src={restaurant.image} alt={restaurant.name} className="w-full h-36 object-cover rounded-2xl mb-4 border border-slate-800" />
+                                {(restaurant.coverImage || restaurant.logo) && (
+                                    <img src={restaurant.coverImage || restaurant.logo} alt={restaurant.name} className="w-full h-36 object-cover rounded-2xl mb-4 border border-slate-800" />
                                 )}
                                 <div className="space-y-3.5 text-sm text-slate-300">
                                     <p className="flex items-start gap-2.5">
@@ -444,7 +447,7 @@ export default function RestaurantDashboard() {
                         <h2 className="text-lg font-black text-white mb-2 flex items-center gap-2">
                             <Settings size={18} className="text-orange-500" /> Update Restaurant Profile
                         </h2>
-                        <p className="text-xs text-slate-400 mb-6">Modify your restaurant storefront image and details visible to customers.</p>
+                        <p className="text-xs text-slate-400 mb-6">Update the contact details shown to customers.</p>
 
                         <form onSubmit={handleUpdateRestaurant} className="space-y-4">
                             <div>
@@ -455,23 +458,6 @@ export default function RestaurantDashboard() {
                                     onChange={(e) => setRestaurantForm({ ...restaurantForm, name: e.target.value })} 
                                     className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-orange-500" 
                                 />
-                            </div>
-
-                            <div>
-                                <label className="text-xs font-bold text-slate-400 block mb-1">Restaurant Banner / Profile Image URL</label>
-                                <div className="flex gap-3 items-center">
-                                    <input 
-                                        value={restaurantForm.image} 
-                                        onChange={(e) => setRestaurantForm({ ...restaurantForm, image: e.target.value })} 
-                                        placeholder="https://images.unsplash.com/photo-..." 
-                                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-orange-500" 
-                                    />
-                                </div>
-                                {restaurantForm.image && (
-                                    <div className="mt-3 relative w-full h-32 rounded-xl overflow-hidden border border-slate-700">
-                                        <img src={restaurantForm.image} alt="Preview" className="w-full h-full object-cover" />
-                                    </div>
-                                )}
                             </div>
 
                             <div>
@@ -528,8 +514,8 @@ export default function RestaurantDashboard() {
                                 </select>
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-slate-400 block mb-1">Image URL (Optional)</label>
-                                <input value={foodForm.image} onChange={(event) => setFoodForm({ ...foodForm, image: event.target.value })} placeholder="https://image-link.com/dish.jpg" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500" />
+                                <label className="text-xs font-bold text-slate-400 block mb-1">Dish photo (Optional)</label>
+                                <input type="file" accept="image/*" onChange={(event) => setFoodForm({ ...foodForm, image: event.target.files?.[0] || null })} className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2.5 text-sm text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-orange-500 file:px-3 file:py-2 file:text-xs file:font-bold file:text-white" />
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-slate-400 block mb-1">Description (Optional)</label>

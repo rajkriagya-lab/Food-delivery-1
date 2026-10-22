@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Utensils, Flame } from 'lucide-react';
 import AuthLayout from '../../components/auth/AuthLayout';
@@ -47,8 +47,8 @@ export default function Login() {
                 <div className="space-y-1.5">
                     <div className="flex justify-between items-center ml-1">
                         <label className="block text-xs font-semibold text-gray-300">Password</label>
-                        <Link to="/forgot-password" className="text-xs text-btn hover:underline font-medium">
-                            Forgot?
+                        <Link to="/faq#support" className="text-xs text-btn hover:underline font-medium">
+                            Need help?
                         </Link>
                     </div>
                     <div className="relative">

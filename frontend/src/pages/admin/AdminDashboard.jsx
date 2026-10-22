@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../Api/axios";
 import { useAuthStore } from "../../store/authStore";
+import ThemeToggle from "../../components/ThemeToggle";
 
 const formatCurrency = (value) => `Rs. ${Number(value || 0).toLocaleString()}`;
 const formatDate = (value) => value ? new Date(value).toLocaleDateString("en-NP", { day: "numeric", month: "short", year: "numeric" }) : "—";
@@ -156,9 +157,12 @@ export default function AdminDashboard() {
               </h1>
             </div>
           </div>
-          <button onClick={() => loadDashboard(true)} disabled={refreshing} className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-bold text-slate-200 hover:bg-slate-800 disabled:opacity-60">
-            <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} /> Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <button onClick={() => loadDashboard(true)} disabled={refreshing} className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-bold text-slate-200 hover:bg-slate-800 disabled:opacity-60">
+              <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} /> Refresh
+            </button>
+          </div>
         </header>
 
         {activeTab === "overview" && <Overview overview={overview} orders={orders} restaurants={restaurants} setActiveTab={setActiveTab} />}
