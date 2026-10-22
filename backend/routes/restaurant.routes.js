@@ -1,6 +1,7 @@
 import express from "express";
 import { protect } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/authorize.middleware.js";
+import { upload } from "../middleware/multer.js";
 import { 
     createRestaurant, 
     deleteRestaurant, 
@@ -20,7 +21,7 @@ router.post("/create", protect, authorize("RESTURANT_OWNER"), createRestaurant);
 // 3. Dynamic route comes after static ones
 router.get("/:id", getSingleRestaurant);
 
-router.put("/update/:id", protect, authorize("RESTURANT_OWNER"), updateRestaurant);
+router.put("/update/:id", protect, authorize("RESTURANT_OWNER"), upload.single("image"), updateRestaurant);
 
 router.delete("/delete/:id", protect, authorize("RESTURANT_OWNER"), deleteRestaurant);
 

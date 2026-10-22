@@ -1,3 +1,4 @@
+import { v2 as cloudinary } from "cloudinary";
 import { prisma } from "../db.js";
 import slugify from "slugify";
 
@@ -199,6 +200,15 @@ export const updateRestaurant = async (req, res) => {
             });
         }
 
+        let coverImage = restaurant.coverImage;
+        if (req.file) {
+            const uploaded = await cloudinary.uploader.upload(req.file.path, {
+                folder: "food-delivery/restaurants",
+                resource_type: "image",
+            });
+            coverImage = uploaded.secure_url;
+        }
+
         const updatedRestaurant = await prisma.restaurant.update({
             where: { id },
             data: {
@@ -212,6 +222,7 @@ export const updateRestaurant = async (req, res) => {
                 openingTime,
                 closingTime,
                 isOpen,
+                ...(req.file ? { coverImage } : {}),
             },
         });
 

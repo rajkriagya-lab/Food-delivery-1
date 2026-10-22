@@ -96,6 +96,8 @@ export const getDashboardOverview = async (req, res) => {
                     city: restaurant.city,
                     phone: restaurant.phone,
                     email: restaurant.email,
+                    logo: restaurant.logo,
+                    coverImage: restaurant.coverImage,
                     isOpen: restaurant.isOpen,
                     rating: restaurant.rating,
                     totalReview: restaurant.totalReview,
